@@ -44,7 +44,7 @@
 - The dimension tables _primary key_ which serves as basis for referential integrity with any given fact table to which it is joined.
 - _Continuously valued_ numeric observations are almost always facts.
 - _Discrete_ numeric observations drawn from a small list are almost always dimension attributes.
-- Dimension tables often represent heirarchical relationships - heirarchical descriptive information is stored redundantly *in the spirit of ease of use and query performance*.
+- Dimension tables often represent heirarchical relationships - heirarchical descriptive information is stored redundantly *in the spirit of ease of use and query performance*
   - Resist the urge to normalise data. This normalisation is called _snowflaking_.
 
 ### Facts and Dimensions Joined in a Star Schema
@@ -56,7 +56,7 @@
 
 ### Kimball's DW/BI Architecture
 
-- There are four separate and distinct components to consider in the DW/BI environment:
+- There are four separate and distinct components to consider in the DW/BI environment
   - Operational source systems
     - Special purpose applications
     - Intended for one-record-at-a-time queries
@@ -78,27 +78,27 @@
 ### Alternative DW/BI Architectures
 
 - Independent Data Mart
-  - Working in isolation, departmental data addresses departments's analytic requirements.
-  - Other departments interested in same source data progresses down same path but ends up with different data and definitions.
-  - Numbers rarely match.
-  - Never advocated, but approach is prevalent.
+  - Working in isolation, departmental data addresses departments's analytic requirements
+  - Other departments interested in same source data progresses down same path but ends up with different data and definitions
+  - Numbers rarely match
+  - Never advocated, but approach is prevalent
 
 ### Dimensional Modelling Myths
 
 1. Dimensional Models are for Summary Data Only
-  - Should provide queryable access to the most detailed data<sup>pg 30</sup>.
-  - Should store substantial history<sup>pg 31</sup>.
+  - Should provide queryable access to the most detailed data<sup>pg 30</sup>
+  - Should store substantial history<sup>pg 31</sup>
 
 2. Dimensional Models are Departmental, Not Enterprise
-  - Multiple extracts of the same source data that create multiple, inconsistent analytic databases should be avoided<sup>pg 31</sup>.
+  - Multiple extracts of the same source data that create multiple, inconsistent analytic databases should be avoided<sup>pg 31</sup>
 
 3. Dimensional Models are Not Scalable
-  - Both normalised and dimensional models can answer exactly the same questions, albeit with varying difficulty (normalised is less user-friendly)<sup>pg 31</sup>.
+  - Both normalised and dimensional models can answer exactly the same questions, albeit with varying difficulty (normalised is less user-friendly)<sup>pg 31</sup>
 
 4. Dimensional Models are for Predictable Usage Only
-  - Focus on the organisation's measurement events that are typically stable, unlike analyses that are constantly evolving<sup>pg 31</sup>.
-  - The correct starting point for your dimensional models is to express data at the lowest detail possible for maximum flexibility and extensibility<sup>pg 31</sup>.
+  - Focus on the organisation's measurement events that are typically stable, unlike analyses that are constantly evolving<sup>pg 31</sup>
+  - The correct starting point for your dimensional models is to express data at the lowest detail possible for maximum flexibility and extensibility<sup>pg 31</sup>
 
 ### More Reasons to Think Dimensionally
 
-- Do not focus on a set of required reports or dashboard gauges. Instead constantly ask about the business process measurement events producing that report or dashboard<sup>pg 32</sup>.
+- Do not focus on a set of required reports or dashboard gauges. Instead constantly ask about the business process measurement events producing that report or dashboard<sup>pg 32</sup>
