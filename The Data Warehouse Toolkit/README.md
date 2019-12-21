@@ -82,3 +82,23 @@
   - Other departments interested in same source data progresses down same path but ends up with different data and definitions.
   - Numbers rarely match.
   - Never advocated, but approach is prevalent.
+
+### Dimensional Modelling Myths
+
+1. Dimensional Models are for Summary Data Only
+  - Should provide queryable access to the most detailed data<sup>pg 30</sup>.
+  - Should store substantial history<sup>pg 31</sup>.
+
+2. Dimensional Models are Departmental, Not Enterprise
+  - Multiple extracts of the same source data that create multiple, inconsistent analytic databases should be avoided<sup>pg 31</sup>.
+
+3. Dimensional Models are Not Scalable
+  - Both normalised and dimensional models can answer exactly the same questions, albeit with varying difficulty (normalised is less user-friendly)<sup>pg 31</sup>.
+
+4. Dimensional Models are for Predictable Usage Only
+  - Focus on the organisation's measurement events that are typically stable, unlike analyses that are constantly evolving<sup>pg 31</sup>.
+  - The correct starting point for your dimensional models is to express data at the lowest detail possible for maximum flexibility and extensibility<sup>pg 31</sup>.
+
+### More Reasons to Think Dimensionally
+
+- Do not focus on a set of required reports or dashboard gauges. Instead constantly ask about the business process measurement events producing that report or dashboard<sup>pg 32</sup>.
