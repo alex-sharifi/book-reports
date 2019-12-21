@@ -45,7 +45,7 @@
 - _Continuously valued_ numeric observations are almost always facts.
 - _Discrete_ numeric observations drawn from a small list are almost always dimension attributes.
 - Dimension tables often represent heirarchical relationships - heirarchical descriptive information is stored redundantly *in the spirit of ease of use and query performance*.
- - Resist the urge to normalise data. This normalisation is called _snowflaking_.
+  - Resist the urge to normalise data. This normalisation is called _snowflaking_.
 
 ### Facts and Dimensions Joined in a Star Schema
 
@@ -57,28 +57,28 @@
 ### Kimball's DW/BI Architecture
 
 - There are four separate and distinct components to consider in the DW/BI environment:
- - Operational source systems
-  - Special purpose applications
-  - Intended for one-record-at-a-time queries
-  - Without any commitment to sharing common data such as product, customer or calendar with other operational systems
- - ETL systems
-  - Everything between the operational source systems and the DW/BI presentation area
-  - Extracting means reading and understanding the source data
-  - Cleansing the data
-  - Combining the data from multiple sources, and de-duplication
-  - Primary mission is to hand off the dimension and fact tables
-  - Splitting/combining columns or joining underlying 3NF table structures into flattened denormalised dimensions
- - Data presentation layer
-  - Data are organised, stored and made available to users, report writers and other analytical BI applications
-  - To be presented, stored and accessed in dimensional schemas
-  - Most finely-grained data, at the most exquisite details, must be available so that users can ask the most precise questions possible
-  - Single fact table for atomic sales metrics, rather than separate similar, but slightly different, databases containing metrics for sales, marketing, logistics, etc
- - BI applications
+  - Operational source systems
+    - Special purpose applications
+    - Intended for one-record-at-a-time queries
+    - Without any commitment to sharing common data such as product, customer or calendar with other operational systems
+  - ETL systems
+    - Everything between the operational source systems and the DW/BI presentation area
+    - Extracting means reading and understanding the source data
+    - Cleansing the data
+    - Combining the data from multiple sources, and de-duplication
+    - Primary mission is to hand off the dimension and fact tables
+    - Splitting/combining columns or joining underlying 3NF table structures into flattened denormalised dimensions
+  - Data presentation layer
+    - Data are organised, stored and made available to users, report writers and other analytical BI applications
+    - To be presented, stored and accessed in dimensional schemas
+    - Most finely-grained data, at the most exquisite details, must be available so that users can ask the most precise questions possible
+    - Single fact table for atomic sales metrics, rather than separate similar, but slightly different, databases containing metrics for sales, marketing, logistics, etc
+  - BI applications
 
 ### Alternative DW/BI Architectures
 
 - Independent Data Mart
- - Working in isolation, departmental data addresses departments's analytic requirements.
- - Other departments interested in same source data progresses down same path but ends up with different data and definitions.
- - Numbers rarely match.
- - Never advocated, but approach is prevalent.
+  - Working in isolation, departmental data addresses departments's analytic requirements.
+  - Other departments interested in same source data progresses down same path but ends up with different data and definitions.
+  - Numbers rarely match.
+  - Never advocated, but approach is prevalent.
