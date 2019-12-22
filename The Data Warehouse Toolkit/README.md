@@ -56,6 +56,8 @@
 
 ### Dimension Tables for Descriptive Context
 
+#### Dimension Table Overview
+
 - Often have many columns (sometimes 50 to 100).
 - The dimension tables _primary key_ which serves as basis for referential integrity with any given fact table to which it is joined.
 - _Continuously valued_ numeric observations are almost always facts.
