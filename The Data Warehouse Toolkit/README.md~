@@ -51,19 +51,8 @@
     - Semi-additive can be summed across some dimensions<sup>pg 42</sup>.
     - Non-additive measures include ratios (it does not make sense to sum ratios). A good approach for non-additive facts is to store the fully additive components of the non-additive measure and sum these components in the BI application<sup>pg 42</sup>.
 - Nulls in fact tables
-    - Aggretations in SQL gracefully ignore `null`<sup>pg 42</sup>. In fact, substituting a zero in a null-valued metric instead would improperly skew aggregated metrics<sup>pg 92</sup>.
+    - Aggretations in SQL gracefully ignore `null`<sup>pg 42</sup>.
     - Avoid `null` in foreign keys, instead have an 'Unknown' or 'Not Applicable' row in the associated dimension table<sup>pg 42</sup>.
-    - Referential integrity is violated if you put a null in a fact table column declared as a foreign key to a dimension table<sup>pg 92</sup>.
-- Surrogate keys
-    - Compulsory for dimension tables, less important for fact tables<sup>pg 102</sup>.
-    - Immediate unique identification. Identify single fact table rows without navigating multiple dimensions<sup>pg 103</sup>.
-    - Revert bulk loads. Identify exactly where load processes halted, and specify range of keys to revert, or resume from<sup>pg 103</sup>.
-    - Using surrogate key as a parent in a parent/child schema. In cases where one fact table contains rows that are _parents_ of those in a lower grain fact table (_child_), the fact table surrogate key in the parent table is also exposed in the child table (the child fact table should also include parent's dimension foreign keys)<sup>pg 103</sup>.
-- Extending dimensional design
-    - Add a foreign key to the new dimension table in the fact table<sup>pg 96</sup>.
-    - Since we should avoud `null` in foreign keys, substitute historical data with a default dimension surrogate key corresponding to 'Prior to New Change' and new data that does not include the attribute with 'Not Applicable'<sup>pg 96</sup>.
-    - New measured facts can be added by a new column to the fact table, and values populated (assuming same grain as the existing facts)<sup>pg 97</sup>.
-- Factless fact tables
 
 ### Dimension Tables for Descriptive Context
 
@@ -86,28 +75,10 @@
     - Wide, flat, denormalised<sup>pg 46</sup>
     - Populated with verbose descriptions<sup>pg 46</sup>. Cryptic abbreviations, operational codes or true/false flags should be replaced with full text words<sup>pg 48</sup>.
     - Rather than decoding flags into understandable labels in the BI application, we prefer that decoded values be stored in the database so they are consistently available to all users regardless of their BI reporting environment<sup>pg 82</sup>.
-    - Separate heirarchies can gracefull coexist in the same dimension table<sup>pg 48</sup>.
+    - Null-valued dimension attributes should be substituted with a descriptive string, such as 'Unknown' or 'Not Applicable'<sup>pg 48</sup>.
 - Degenerate dimensions
     - Some fact tables have dimension keys for dimension tables that bear no context, i.e. invoice number. It is acknowledged there is no associated dimension table with this key<sup>pg 47</sup>.
-    - These can be useful for grouping purposes (i.e. grouping across basket transactions), and also linking back to operational system<sup>pg 93</sup>.
-    - Typically sits in a fact table but does not have a corresponding dimension table<sup>pg 94</sup>.
-    - Plays an important role in a fact table's primary key<sup>pg 94</sup>.
-- Nulls in dimension attribute values
-    - When a dimension row has not been fully populated, or when there are attributes that are not applicable to all the dimension's rows<sup>pg 92</sup>.
-    - Null-valued dimension attributes should be substituted with a descriptive string, such as 'Unknown' or 'Not Applicable'<sup>pg 48</sup>.
-    - Null values disappear in pull-down menus, so it should be made clear that users are excluding these null values<sup>pg 92</sup>.
-- Surrogate keys
-    - The unique primary key of a dimension table should be a _surrogate key_, rather than relying on the operational source identifier, known as the _natural key_<sup>pg 98</sup>.
-    - Simply integers that are assigned sequentially as needed to populate a dimension, i.e. first row is assigned a surrogate key of 1, next is assigned key of 2, and so on<sup>pg 98</sup>.
-    - The value of the surrogate key has no business significance. Merely serve to join dimension tables to fact tables<sup>pg 98</sup>.
-    - Every join between dimension and fact tables should be based on meaningless integer surrogate keys. Avoid using a natural key as the dimension table's primary key<sup>pg 99</sup>.
-    - Protects data warehouse from operational system changes. Maintain control over DW/BI environment, rather than being dictated by an operational systems' rule changes for generating, updating, recycling, reusing codes for natural keys. Many operational systems reuse IDs after a period of dormancy, surrogate keys provide a mechanism to differentiate separate instances of the same natural key<sup>pg 99</sup>.
-    - Handle unknown conditions. Assign surrogate keys to identify cases not present in operational systems<sup>pg 100</sup>.
-- Extending dimensional design
-    - Create new dimension table and add another foreign key in the fact table<sup>pg 96</sup>.
-    - Likewise, include a 'Not Applicable' row in the new dimension<sup>pg 96</sup>.
-    - New dimension attributes can be added to dimension tables as new columns<sup>pg 96</sup>.
-    - New dimensions can be gracefully added to existing fact tables by adding a new foreign key column and populating it with values of the primary key from the new dimension<sup>pg 96</sup>.
+- Separate heirarchies can gracefull coexist in the same dimension table<sup>pg 48</sup>.
 
 #### Date Dimensions
 
@@ -120,7 +91,6 @@
     3. Calendar logic belongs in a dimension table, not in the application code<sup>pg 82</sup>.
     4. There are many date attributes not supported by the SQL date function<sup>pg 82</sup>.
 - Time-of-day should be handled as a simple date/time fact in the fact table<sup>pg 83</sup>.
-- Date dimension smart keys: it is common to assign the primary key of a date dimension, and foreign key of a fact table, as a meaningful integer such as yyyymmdd. Although not intended to provide BI applications with a mechanism to bypass a join between fact table and date dimension (and directly query the fact table), it is useful for partitioning fact tables. It allows old data to be removed gracefully<sup>pg 102</sup>.
 
 ### Facts and Dimensions Joined in a Star Schema
 
@@ -178,8 +148,6 @@
 
 - Do not focus on a set of required reports or dashboard gauges. Instead constantly ask about the business process measurement events producing that report or dashboard<sup>pg 32</sup>
 
----
-
 ## Kimball Modelling Techniques
 
 ### Gather Business Requirements and Data Realities
@@ -225,4 +193,3 @@
         - It is recommended derived facts are stored physically, computing it consistently at ETL stage, eliminating possibility of user calculation errors<sup>pg 77</sup>.
         - Avoid performing calculation in BI application because users may access data using different tools<sup>pg 78</sup>.
         - However non-additive metrics need to be calculated in BI application, because calculation cannot be pre-calculated across every dimension slice<sup>pg 78</sup>.
-    - Data involved in calculations should be in fact tables and data involved in constraints, groups and labels should be in dimension tables<sup>pg 86</sup>
