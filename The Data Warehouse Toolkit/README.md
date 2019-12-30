@@ -31,7 +31,7 @@
 #### Fact Table Overview
 
 - Stores the performance measurements resulting from an organisations business process events.
-- Each row in a fact table corresponds to a measurement event<sup>pg 10</sup>.
+- Each row in a fact table corresponds to the most atomic measurement event<sup>pg 10</sup>.
 - The data on each row is at a specific level of detail (_grain_)<sup>pg 10</sup>.
 - All the measurement rows in a fact table must be at the same grain.
 - Facts are often described as _continuously valued_ to help sort out what is a fact and what is a dimension attribute<sup>pg 11</sup>.
@@ -46,6 +46,7 @@
 - Fact table structure
     - Contains numeric measures produced by an operational measurement event in the real world<sup>pg 41</sup>.
     - Based on a _physical activity_ and is not influenced by the eventual reports that may be produced<sup>pg 41</sup>.
+    - Atomic data should be the foundation for every fact table design to withstand business users' ad hoc attacks.
 - Additive, semi-additive, non-additive
     - Additive can be summed across any of the dimensions associated with the fact table<sup>pg 42</sup>.
     - Semi-additive can be summed across some dimensions<sup>pg 42</sup>.
@@ -64,6 +65,9 @@
     - Since we should avoud `null` in foreign keys, substitute historical data with a default dimension surrogate key corresponding to 'Prior to New Change' and new data that does not include the attribute with 'Not Applicable'<sup>pg 96</sup>.
     - New measured facts can be added by a new column to the fact table, and values populated (assuming same grain as the existing facts)<sup>pg 97</sup>.
 - Factless fact tables
+    - To do
+- 'Centipede' fact tables
+    - A very large number of dimensions (more than 25) typically are a sign that several dimensions are not completely independent and should be combined into a single dimension. For example, it is a mistake to model a fact table with separate keys for `Date`, `Week`, `Month`, `Quarter`, `Year` dimensions or `Product`, `Product Category`, `Package Type` dimensions - these are clearly related attributes so should be included in the same dimension tables<sup>pg 108</sup>. 
 
 ### Dimension Tables for Descriptive Context
 
@@ -73,11 +77,12 @@
 - The dimension tables _primary key_ which serves as basis for referential integrity with any given fact table to which it is joined.
 - _Continuously valued_ numeric observations are almost always facts.
 - _Discrete_ numeric observations drawn from a small list are almost always dimension attributes.
-- Dimension tables often represent heirarchical relationships - heirarchical descriptive information is stored redundantly in the spirit of ease of use and query performance
+- Dimension tables often represent heirarchical relationships - heirarchical descriptive information is stored redundantly in the spirit of ease of use and query performance.
     - Resist the urge to normalise data. This normalisation is called _snowflaking_<sup>pg 15</sup>.
     - Although snowflake represents heirarchical data accurately, you should avoid snowflakes because it is difficult for business users to understand and navigate<sup>pg 50</sup>.
     - A flattened denormalised dimension table contains exactly the same information as a snowflaked dimension<sup>pg 50</sup>.
     - Normalising values into separate tables defeats the primary goals of **simplicity and performance**<sup>pg 84</sup>.
+    - Dimensional model consciously breaks traditional data modelling rules to focus on simplicity and performance, not on transaction processing efficiencies<sup>pg 104</sup>.
 
 #### Dimension Table Techniques
 
@@ -86,7 +91,7 @@
     - Wide, flat, denormalised<sup>pg 46</sup>
     - Populated with verbose descriptions<sup>pg 46</sup>. Cryptic abbreviations, operational codes or true/false flags should be replaced with full text words<sup>pg 48</sup>.
     - Rather than decoding flags into understandable labels in the BI application, we prefer that decoded values be stored in the database so they are consistently available to all users regardless of their BI reporting environment<sup>pg 82</sup>.
-    - Separate heirarchies can gracefull coexist in the same dimension table<sup>pg 48</sup>.
+    - Separate heirarchies can gracefully coexist in the same dimension table<sup>pg 48</sup>.
 - Degenerate dimensions
     - Some fact tables have dimension keys for dimension tables that bear no context, i.e. invoice number. It is acknowledged there is no associated dimension table with this key<sup>pg 47</sup>.
     - These can be useful for grouping purposes (i.e. grouping across basket transactions), and also linking back to operational system<sup>pg 93</sup>.
@@ -104,30 +109,33 @@
     - Protects data warehouse from operational system changes. Maintain control over DW/BI environment, rather than being dictated by an operational systems' rule changes for generating, updating, recycling, reusing codes for natural keys. Many operational systems reuse IDs after a period of dormancy, surrogate keys provide a mechanism to differentiate separate instances of the same natural key<sup>pg 99</sup>.
     - Handle unknown conditions. Assign surrogate keys to identify cases not present in operational systems<sup>pg 100</sup>.
 - Extending dimensional design
+    - You can add completely new dimensions to the schema as long as a single value of that dimension is defined for each existing fact row.
     - Create new dimension table and add another foreign key in the fact table<sup>pg 96</sup>.
     - Likewise, include a 'Not Applicable' row in the new dimension<sup>pg 96</sup>.
     - New dimension attributes can be added to dimension tables as new columns<sup>pg 96</sup>.
     - New dimensions can be gracefully added to existing fact tables by adding a new foreign key column and populating it with values of the primary key from the new dimension<sup>pg 96</sup>.
-
-#### Date Dimensions
-
-- Special dimension because it is nearly guaranteed to be in every dimensional model<sup>pg 79</sup>.
-- "Date dimension" means a daily grained dimension table<sup>pg 80</sup>.
-- Even 20 years' worth of days is only approximately 7,300 rows<sup>pg 80</sup>.
-- Explicit date dimensions are preferred (rather than a date key in the fact table as a date type column):
-    1. Most database engines are efficient enough at resolving dimensional queries (it is not necessary to avoid joins like the plague)<sup>pg 81</sup>.
-    2. Average business users are not versed in SQL date semantics, so provide a wide range of meaningful calendar groupings<sup>pg 81</sup>.
-    3. Calendar logic belongs in a dimension table, not in the application code<sup>pg 82</sup>.
-    4. There are many date attributes not supported by the SQL date function<sup>pg 82</sup>.
-- Time-of-day should be handled as a simple date/time fact in the fact table<sup>pg 83</sup>.
-- Date dimension smart keys: it is common to assign the primary key of a date dimension, and foreign key of a fact table, as a meaningful integer such as yyyymmdd. Although not intended to provide BI applications with a mechanism to bypass a join between fact table and date dimension (and directly query the fact table), it is useful for partitioning fact tables. It allows old data to be removed gracefully<sup>pg 102</sup>.
-
-### Facts and Dimensions Joined in a Star Schema
-
-- The most granular or atomic data has the most dimensionality.
-- Atomic data should be the foundation for every fact table design to withstand business users' ad hoc attacks.
-- You can add completely new dimensions to the schema as long as a single value of that dimension is defined for each existing fact row.
-- You can add new facts to the fact table, assuming that the level of detail is consistent with the existing fact table.
+- Snowflaking
+    - Dimension table normalisation is referred to as _snowflaking_<sup>pg 104</sup>.
+    - Data modelers from the operational world often feel unconfomfortable working with flattened, denormalised tables<sup>pg 104</sup>.
+    - It is true that normalised dimensions are easier to maintain (if an attribute value changes, we only need to change it once in the lookup table, rather than thousands of times in a flattened table). In a DW/BI environment, this repetitive task is taken care of in ETL system<sup>pg 104</sup>.
+    - Snowflaked tables make for more complex presentation<sup>pg 105</sup>.
+    - Snowflaked tables require more joins so are usually slower to query<sup>pg 105</sup>.
+    - Efforts to denormalise dimension tables (snowflaking) to save disk space is usually a waste of time. It is true that repeated, verbose textual descriptors take up more storage than code lookups, but total storage savings are usually in the MB. Meanwhile, fact tables can easily be in the GB size<sup>pg 105</sup>.
+    - Impacts usability. Having all dimension attribute values within easy reach makes browsing within a dimension simpler<sup>pg 105</sup>.
+    - Snowflaked tables respond fine if there is just one lookup table, but become unwiedly when the user is required to traverse multiple dimension tables<sup>pg 106</sup>.
+    - Even if a database vendor claims the horsepower to query a fully normalised dimensional model without query penalties, a logical and easy to use dimensional model is still required<sup>pg 106</sup>.
+    - _Outriggers_ (special purpose tables specific to a particular dimension table) can be used sparingly. For example, when an analyst wants to filter and group a dimension table by non-standard calendar attributes (i.e. product introduction date attribute)<sup>pg 107</sup>.
+- Date dimensions
+    - A special dimension because it is nearly guaranteed to be in every dimensional model<sup>pg 79</sup>.
+    - "Date dimension" means a _daily_ grained dimension table<sup>pg 80</sup>.
+    - Even 20 years' worth of days is only approximately 7,300 rows<sup>pg 80</sup>.
+    - Explicit date dimensions are preferred (rather than a date key in the fact table as a date type column):
+        1. Most database engines are efficient enough at resolving dimensional queries (it is not necessary to avoid joins like the plague)<sup>pg 81</sup>.
+        2. Average business users are not versed in SQL date semantics, so provide a wide range of meaningful calendar groupings<sup>pg 81</sup>.
+        3. Calendar logic belongs in a dimension table, not in the application code<sup>pg 82</sup>.
+        4. There are many date attributes not supported by the SQL date function<sup>pg 82</sup>.
+    - Time-of-day should be handled as a simple date/time fact in the fact table<sup>pg 83</sup>.
+    - Date dimension smart keys: it is common to assign the primary key of a date dimension, and foreign key of a fact table, as a meaningful integer such as yyyymmdd. Although not intended to provide BI applications with a mechanism to bypass a join between fact table and date dimension (and directly query the fact table), it is useful for partitioning fact tables. It allows old data to be removed gracefully<sup>pg 102</sup>.
 
 ### Kimball's DW/BI Architecture
 
