@@ -47,9 +47,11 @@
     - Contains numeric measures produced by an operational measurement event in the real world<sup>pg 41</sup>.
     - Based on a _physical activity_ and is not influenced by the eventual reports that may be produced<sup>pg 41</sup>.
     - Atomic data should be the foundation for every fact table design to withstand business users' ad hoc attacks.
+-Fact table types
+    - Transaction fact tables 
 - Additive, semi-additive, non-additive
     - Additive can be summed across any of the dimensions associated with the fact table<sup>pg 42</sup>.
-    - Semi-additive can be summed across some dimensions<sup>pg 42</sup>.
+    - Semi-additive can be summed across some dimensions<sup>pg 42</sup>. All measures that record a static level (inventory, account balances, room temperatures, etc) are inherently non-additive across the Date dimension and possibly other dimensions<sup>pg 115</sup>. Deltas on the other hand, are fully additive<sup>pg 116</sup>.
     - Non-additive measures include ratios (it does not make sense to sum ratios). A good approach for non-additive facts is to store the fully additive components of the non-additive measure and sum these components in the BI application<sup>pg 42</sup>.
 - Nulls in fact tables
     - Aggretations in SQL gracefully ignore `null`<sup>pg 42</sup>. In fact, substituting a zero in a null-valued metric instead would improperly skew aggregated metrics<sup>pg 92</sup>.
