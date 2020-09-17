@@ -47,8 +47,10 @@
     - Contains numeric measures produced by an operational measurement event in the real world<sup>pg 41</sup>.
     - Based on a _physical activity_ and is not influenced by the eventual reports that may be produced<sup>pg 41</sup>.
     - Atomic data should be the foundation for every fact table design to withstand business users' ad hoc attacks.
--Fact table types
-    - Transaction fact tables 
+- Snapshot fact tables
+    - There is more to life than transactions alone. Some form of a snapshot table to give a more cumulative view of a process often complements a transaction fact table<sup>pg 117</sup>.
+    - Periodic snapshot
+    - Accumulating snapshot
 - Additive, semi-additive, non-additive
     - Additive can be summed across any of the dimensions associated with the fact table<sup>pg 42</sup>.
     - Semi-additive can be summed across some dimensions<sup>pg 42</sup>. All measures that record a static level (inventory, account balances, room temperatures, etc) are inherently non-additive across the Date dimension and possibly other dimensions<sup>pg 115</sup>. Deltas on the other hand, are fully additive<sup>pg 116</sup>.
