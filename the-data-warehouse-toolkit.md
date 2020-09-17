@@ -47,10 +47,13 @@
     - Contains numeric measures produced by an operational measurement event in the real world<sup>pg 41</sup>.
     - Based on a _physical activity_ and is not influenced by the eventual reports that may be produced<sup>pg 41</sup>.
     - Atomic data should be the foundation for every fact table design to withstand business users' ad hoc attacks.
-- Snapshot fact tables
-    - There is more to life than transactions alone. Some form of a snapshot table to give a more cumulative view of a process often complements a transaction fact table<sup>pg 117</sup>.
-    - Periodic snapshot
-    - Accumulating snapshot
+- There are just three fundamental types of fact tables; transaction, periodic snapshot and accumulating snapshot<sup>pg 119</sup>. All three serve a useful purpose, and often need two to complement each other.
+    - Transaction fact tables are the most fundamental view of operations, at the individual transaction line level<sup>pg 120</sup>. A row exists in the fact table only if a transaction event occurred. Naturally most atomic and enables analysis at extreme detail. However you cannot survive on transactions alone.
+    - Snapshot fact tables
+        - There is more to life than transactions alone. Some form of a snapshot table to give a more cumulative view of a process often complements a transaction fact table<sup>pg 117</sup>.
+        - Periodic snapshot are needed to see the cumulative performance of an operation at regular and predictable intervals<sup>pg 120</sup>, and cover all facts at a given snapshot date<sup>pg 113</sup>. You take a 'picture' of the activity at the end of a given day, week, month. Stacked consecutively into the fact table<sup>pg 120</sup>. Represents an aggregation of the transactional activity that occurred during a time period. Can include non-events.
+        - Accumulating snapshot are used for processes that have a definite beginning, middle and end. Further changes to a single row are tracked on the same row. Suitable if rows are tracked by serial number, etc. Each fact table row is updated repeatedly until there are no futher updates to apply to a given row. Events that have not happened on a given row are populated with a '0' or null<sup>pg 118</sup>. Have multiple date foreign keys, representing the major events or process milestones (and perhaps an additional date columns that indicates when the snapshot row was last updated)<sup>pg 121</sup>. Easier to calculate lags/time elapsed between milestones than a transaction fact table because you would need to correlate rows to calculate time lapses.
+    - Transactions and snapshots are the yin and yang of dimensional designs<sup>pg 122</sup>. Each provide different vantage points on the same story.
 - Additive, semi-additive, non-additive
     - Additive can be summed across any of the dimensions associated with the fact table<sup>pg 42</sup>.
     - Semi-additive can be summed across some dimensions<sup>pg 42</sup>. All measures that record a static level (inventory, account balances, room temperatures, etc) are inherently non-additive across the Date dimension and possibly other dimensions<sup>pg 115</sup>. Deltas on the other hand, are fully additive<sup>pg 116</sup>.
