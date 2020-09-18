@@ -74,7 +74,7 @@
 - Factless fact tables
     - To do
 - 'Centipede' fact tables
-    - A very large number of dimensions (more than 25) typically are a sign that several dimensions are not completely independent and should be combined into a single dimension. For example, it is a mistake to model a fact table with separate keys for `Date`, `Week`, `Month`, `Quarter`, `Year` dimensions or `Product`, `Product Category`, `Package Type` dimensions - these are clearly related attributes so should be included in the same dimension tables<sup>pg 108</sup>. 
+    - A very large number of dimensions (more than 25) typically are a sign that several dimensions are not completely independent and should be combined into a single dimension. For example, it is a mistake to model a fact table with separate keys for `Date`, `Week`, `Month`, `Quarter`, `Year` dimensions or `Product`, `Product Category`, `Package Type` dimensions - these are clearly related attributes so should be included in the same dimension tables<sup>pg 108</sup>.
 
 ### Dimension Tables for Descriptive Context
 
@@ -143,26 +143,32 @@
         4. There are many date attributes not supported by the SQL date function<sup>pg 82</sup>.
     - Time-of-day should be handled as a simple date/time fact in the fact table<sup>pg 83</sup>.
     - Date dimension smart keys: it is common to assign the primary key of a date dimension, and foreign key of a fact table, as a meaningful integer such as yyyymmdd. Although not intended to provide BI applications with a mechanism to bypass a join between fact table and date dimension (and directly query the fact table), it is useful for partitioning fact tables. It allows old data to be removed gracefully<sup>pg 102</sup>.
+- Conformed dimensions
+    - Shared across business process fact tables<sup>pg 130</sup>.
+    - Built once in ETL system and replicated either logically or physically throughout the enterprise DW/BI environment, a policy mandated by CIO<sup>pg 130</sup>.
+    - Enable you to combine performance measurements from different business processes in a single report ("drilling across fact tables")<sup>pg 130</sup>. Query each dimensional model separately and then outer-join the query results based on a common dimension attribute. Full outer-join ensures all rows are included in the report, even if they only appear in one set of query results. Also known as multipass, multi-select, multi-fact, or stitch queries, because metrics from different facts tables are brought together.
+    - Identical conformed dimensions mean the same thing with every possible fact table to which they are joined. Dimension built once in ETL system and duplicated outward to each dimensional model<sup>pg 131</sup>.
+    - Shrunken rollup conformed dimensions conform to the base atomic dimension if the attributes are a strict subset of the atomic dimension's attributes<sup>pg 132</sup>.
 
 ### Kimball's DW/BI Architecture
 
-- There are four separate and distinct components to consider in the DW/BI environment
+- There are four separate and distinct components to consider in the DW/BI environment<sup>pg 18<sup>:
     - Operational source systems
-        - Special purpose applications
-        - Intended for one-record-at-a-time queries
-        - Without any commitment to sharing common data such as product, customer or calendar with other operational systems
+        - Special purpose applications.
+        - Intended for one-record-at-a-time queries.
+        - Without any commitment to sharing common data such as product, customer or calendar with other operational systems.
     - ETL systems
-        - Everything between the operational source systems and the DW/BI presentation area
-        - Extracting means reading and understanding the source data
-        - Cleansing the data
-        - Combining the data from multiple sources, and de-duplication
-        - Primary mission is to hand off the dimension and fact tables
-        - Splitting/combining columns or joining underlying 3NF table structures into flattened denormalised dimensions
+        - Everything between the operational source systems and the DW/BI presentation area<sup>pg 19</sup>.
+        - Extracting means reading and understanding the source data.
+        - Cleansing the data.
+        - Combining the data from multiple sources, and de-duplication.
+        - Primary mission is to hand off the dimension and fact tables<sup>pg 20</sup>.
+        - Splitting/combining columns or joining underlying 3NF table structures into flattened denormalised dimensions.
     - Data presentation layer
-        - Data are organised, stored and made available to users, report writers and other analytical BI applications
-        - To be presented, stored and accessed in dimensional schemas
-        - Most finely-grained data, at the most exquisite details, must be available so that users can ask the most precise questions possible
-        - Single fact table for atomic sales metrics, rather than separate similar, but slightly different, databases containing metrics for sales, marketing, logistics, etc
+        - Data are organised, stored and made available to users, report writers and other analytical BI applications.
+        - To be presented, stored and accessed in dimensional schemas.
+        - Most finely-grained data, at the most exquisite details, must be available so that users can ask the most precise questions possible.
+        - Single fact table for atomic sales metrics, rather than separate similar, but slightly different, databases containing metrics for sales, marketing, logistics, etc.
     - BI applications
 
 ### Alternative DW/BI Architectures
@@ -241,3 +247,17 @@
         - Avoid performing calculation in BI application because users may access data using different tools<sup>pg 78</sup>.
         - However non-additive metrics need to be calculated in BI application, because calculation cannot be pre-calculated across every dimension slice<sup>pg 78</sup>.
     - Data involved in calculations should be in fact tables and data involved in constraints, groups and labels should be in dimension tables<sup>pg 86</sup>
+
+### Enterprise Data Warehouse Bus Architecture<sup>pg 123</sup>
+
+- For long-term DW/BI success, you need to use an architected, incremental approach to build the enterprise's warehouse.
+- A 'bus' is a common structure to which everything connects and from which everything derives power<sup>pg 124</sup>.
+- Ultimately, all the processes of an organisation's value chain create a family of dimensional models that share a comprehensive set of common, conformed dimensions<sup>pg 124</sup>.
+- Enterprise data warehouse bus matrix is used to document and communicate the bus architecture.
+    - Matrix rows translate into dimensional models, often recognisable by their operational source<sup>pg 126</sup>.
+    - Matrix rows should refer to business processes, not derivative reports or analytics<sup>pg 128</sup>.
+    - Matrix columns translate the common dimensions used across the enterprise.
+    - Matrix columns should not be overly generalised, i.e. use "Customer" or "Employee" or "Supplier" dimensions instead of "Person".
+    - Delivers the big picture perspective, regardless of database or technology<sup>pg 127</sup>.
+    - Shared dimensions supply potent integration glue, allowing users to drill across processes<sup>pg 127</sup>.
+    - Illustrates the importance of identifying experts to serve as data governance leaders for the common dimensions<sup>pg 127</sup>.
