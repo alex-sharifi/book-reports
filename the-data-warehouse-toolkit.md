@@ -51,7 +51,7 @@
     - Transaction fact tables are the most fundamental view of operations, at the individual transaction line level<sup>pg 120</sup>. A row exists in the fact table only if a transaction event occurred. Naturally most atomic and enables analysis at extreme detail. However you cannot survive on transactions alone.
     - Snapshot fact tables
         - There is more to life than transactions alone. Some form of a snapshot table to give a more cumulative view of a process often complements a transaction fact table<sup>pg 117</sup>.
-        - Periodic snapshot are needed to see the cumulative performance of an operation at regular and predictable intervals<sup>pg 120</sup>, and cover all facts at a given snapshot date<sup>pg 113</sup>. You take a 'picture' of the activity at the end of a given day, week, month. Stacked consecutively into the fact table<sup>pg 120</sup>. Represents an aggregation of the transactional activity that occurred during a time period. Can include non-events.
+        - Periodic snapshot are needed to see the cumulative performance of an operation at regular and predictable intervals<sup>pg 120</sup>, and cover all facts at a given snapshot date<sup>pg 113</sup>. You take a 'picture' of the activity at the end of a given day, week, month. Stacked consecutively into the fact table<sup>pg 120</sup>. Represents an aggregation of the transactional activity that occurred during a time period. Can include non-events. Good for long-running scenarios<sup>pg 139</sup>.
         - Accumulating snapshot are used for processes that have a definite beginning, middle and end. Further changes to a single row are tracked on the same row. Suitable if rows are tracked by serial number, etc. Each fact table row is updated repeatedly until there are no futher updates to apply to a given row. Events that have not happened on a given row are populated with a '0' or null<sup>pg 118</sup>. Have multiple date foreign keys, representing the major events or process milestones (and perhaps an additional date columns that indicates when the snapshot row was last updated)<sup>pg 121</sup>. Easier to calculate lags/time elapsed between milestones than a transaction fact table because you would need to correlate rows to calculate time lapses.
     - Transactions and snapshots are the yin and yang of dimensional designs<sup>pg 122</sup>. Each provide different vantage points on the same story.
 - Additive, semi-additive, non-additive
@@ -75,6 +75,8 @@
     - To do
 - 'Centipede' fact tables
     - A very large number of dimensions (more than 25) typically are a sign that several dimensions are not completely independent and should be combined into a single dimension. For example, it is a mistake to model a fact table with separate keys for `Date`, `Week`, `Month`, `Quarter`, `Year` dimensions or `Product`, `Product Category`, `Package Type` dimensions - these are clearly related attributes so should be included in the same dimension tables<sup>pg 108</sup>.
+- Conformed facts
+    - If facts live in more than one dimensional model, the underlying definitions and equations for these facts must be the same if they are to be called the same thing<sup>pg 139</sup>.
 
 ### Dimension Tables for Descriptive Context
 
@@ -261,3 +263,6 @@
     - Delivers the big picture perspective, regardless of database or technology<sup>pg 127</sup>.
     - Shared dimensions supply potent integration glue, allowing users to drill across processes<sup>pg 127</sup>.
     - Illustrates the importance of identifying experts to serve as data governance leaders for the common dimensions<sup>pg 127</sup>.
+- Data governance objectives<sup>pg 137</sup>:
+    - Reach agreement on data definitions, labels and domain values so that everyone is speaking the same language.
+    - Establishes policies and responsibilities for data quality and accuracy, as well as data security and access controls.
