@@ -82,6 +82,8 @@
 
 #### Dimension Table Overview
 
+- Provide the "who, what, where, when, why and how: context surrounding a business process event<sup>pg 40</sup>.
+- Contain the entry points and descriptive labels that enable the DW/BI system to be leveraged for analysis<sup>pg 40</sup>.
 - Often have many columns (sometimes 50 to 100).
 - The dimension tables _primary key_ which serves as basis for referential integrity with any given fact table to which it is joined.
 - _Continuously valued_ numeric observations are almost always facts.
@@ -112,6 +114,7 @@
     - Null values disappear in pull-down menus, so it should be made clear that users are excluding these null values<sup>pg 92</sup>.
 - Surrogate keys
     - The unique primary key of a dimension table should be a _surrogate key_, rather than relying on the operational source identifier, known as the _natural key_<sup>pg 98</sup>.
+    - The DW/BI system needs to claim control of the primary keys of all dimensions, rather than using explicit natural keys<sup>pg 46</sup>.
     - Simply integers that are assigned sequentially as needed to populate a dimension, i.e. first row is assigned a surrogate key of 1, next is assigned key of 2, and so on<sup>pg 98</sup>.
     - The value of the surrogate key has no business significance. Merely serve to join dimension tables to fact tables<sup>pg 98</sup>.
     - Every join between dimension and fact tables should be based on meaningless integer surrogate keys. Avoid using a natural key as the dimension table's primary key<sup>pg 99</sup>.
@@ -154,7 +157,7 @@
 
 ### Kimball's DW/BI Architecture
 
-- There are four separate and distinct components to consider in the DW/BI environment<sup>pg 18<sup>:
+- There are four separate and distinct components to consider in the DW/BI environment<sup>pg 18</sup>:
     - Operational source systems
         - Special purpose applications.
         - Intended for one-record-at-a-time queries.
