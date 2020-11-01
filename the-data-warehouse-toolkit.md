@@ -85,7 +85,7 @@
 - Provide the "who, what, where, when, why and how: context surrounding a business process event<sup>pg 40</sup>.
 - Contain the entry points and descriptive labels that enable the DW/BI system to be leveraged for analysis<sup>pg 40</sup>.
 - Often have many columns (sometimes 50 to 100).
-- The dimension tables _primary key_ which serves as basis for referential integrity with any given fact table to which it is joined.
+- The dimension tables _primary key_ (surrogate key) which serves as basis for referential integrity with any given fact table to which it is joined.
 - _Continuously valued_ numeric observations are almost always facts.
 - _Discrete_ numeric observations drawn from a small list are almost always dimension attributes.
 - Dimension tables often represent heirarchical relationships - heirarchical descriptive information is stored redundantly in the spirit of ease of use and query performance.
@@ -154,6 +154,15 @@
     - Enable you to combine performance measurements from different business processes in a single report ("drilling across fact tables")<sup>pg 130</sup>. Query each dimensional model separately and then outer-join the query results based on a common dimension attribute. Full outer-join ensures all rows are included in the report, even if they only appear in one set of query results. Also known as multipass, multi-select, multi-fact, or stitch queries, because metrics from different facts tables are brought together.
     - Identical conformed dimensions mean the same thing with every possible fact table to which they are joined. Dimension built once in ETL system and duplicated outward to each dimensional model<sup>pg 131</sup>.
     - Shrunken rollup conformed dimensions conform to the base atomic dimension if the attributes are a strict subset of the atomic dimension's attributes<sup>pg 132</sup>.
+- Slowly Changing Dimensions
+    - Type 0 Retain Original: attribute values never change so facts are always grouped by original value. Appropriate for any attribute labeled "original"<sup>pg 148</sup>.
+    - Type 1 Overwrite: overwrite the old attribute value in the dimension table, replacing it with the current value. Always reflects most recent assignment. Fact table is untouched. Easy to implement but does not maintain any history of prior attributes.
+    - Type 2 Add New Row: predominant technique for representing history. Create a new dimension row with a new single-column primary key to unqiuely identify the new profile<sup>pg 153</sup>. Accurately tracking slowly changing dimension attributes, by adding a new row in dimension representing new history state<sup>pg 151</sup>. Should include administrative columns, such as 'effective' and 'expiration' dates<sup>pg 152</sup>. Requires use of surrogate keys - because there will be multiple profile versions for the same natural key.
+    - Type 3 Add New Attribute: do not issue a new dimension row, but rather add a new column to capture the attribute change. Alter the dimension table to add a 'prior' attribute, and populate this new column with the _existing_ value, and treat original column as Type 1 (overwrite) with current value. All existing reports immediately switch over to the newest value, but can still report on old values by querying 'prior' attributes.<sup>pg 154</sup>. Appropriate when there is a strong need to support two views of the world simultaneously (_alternative realities_). Suitable where dimension attributes change at a predictable rhythm - current attributes are overwritten, and attributes for previous values are added for every dimension row<sup>pg 156</sup>.
+    - Type 4 Add Mini-Dimension: break off frequently analysed or frequently changing dimensions into a separate dimension<sup>pg 156</sup>. One row in the mini-dimension for each unique combination of age, purchase frequency, income level, etc encountered in the data (not one row per customer). Continuously variable attributes, such as income are converted to banded ranges.
+    - Hybrid Techniques:
+        - Type 5 Mini-Dimension: add a current mini-dimension key as an attribute in the primary dimension.
+        - Type 6 Add 'Type 1' Attributes to 'Type 2' Dimension: issue a new row to capture the change (type 2) and add a new column to track the current assignment (type 3), where subsequent changes are overwritten (type 1)<sup>pg 161</sup>.
 
 ### Kimball's DW/BI Architecture
 
