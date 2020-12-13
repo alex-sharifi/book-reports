@@ -52,7 +52,16 @@
     - Snapshot fact tables
         - There is more to life than transactions alone. Some form of a snapshot table to give a more cumulative view of a process often complements a transaction fact table<sup>pg 117</sup>.
         - Periodic snapshot are needed to see the cumulative performance of an operation at regular and predictable intervals<sup>pg 120</sup>, and cover all facts at a given snapshot date<sup>pg 113</sup>. You take a 'picture' of the activity at the end of a given day, week, month. Stacked consecutively into the fact table<sup>pg 120</sup>. Represents an aggregation of the transactional activity that occurred during a time period. Can include non-events. Good for long-running scenarios<sup>pg 139</sup>.
-        - Accumulating snapshot are used for processes that have a definite beginning, middle and end. Further changes to a single row are tracked on the same row. Suitable if rows are tracked by serial number, etc. Each fact table row is updated repeatedly until there are no futher updates to apply to a given row. Events that have not happened on a given row are populated with a '0' or null<sup>pg 118</sup>. Have multiple date foreign keys, representing the major events or process milestones (and perhaps an additional date columns that indicates when the snapshot row was last updated)<sup>pg 121</sup>. Easier to calculate lags/time elapsed between milestones than a transaction fact table because you would need to correlate rows to calculate time lapses.
+        - Accumulating snapshot are used for processes that have a definite beginning, middle and end.
+            - Preferably short-lived processes<sup>196</sup>.
+            - Further changes to a single row are tracked on the same row. Suitable if rows are tracked by serial number, etc. Fundamental difference between accumulating snapshot and other fact tables is that existing fact table rows are revisited and updated as more information becomes available<sup>pg 195</sup>.
+            - Each fact table row is updated repeatedly until there are no futher updates to apply to a given row.
+            - Events that have not happened on a given row are populated with a '0' or null<sup>pg 118</sup>, with '0' mapping to 'Unknown' or 'To Be Determined' in the date dimension table<sup>pg 195</sup>.
+            - Have multiple date foreign keys, representing the major events or process milestones (and perhaps an additional date columns that indicates when the snapshot row was last updated)<sup>pg 121</sup>.
+            - Easier to calculate lags/time elapsed between milestones than a transaction fact table because you would need to correlate rows to calculate time lapses.
+            - Used for analysing the entire transaction pipeline, because it would be much harder to calculate average days between milestones in a transaction event fact table</sup>pg 194</sup>.
+            - Reuse of conformed dimensions is to be expected<sup>pg 194</sup>.
+            - Lag calulcations between events should be calculated in ETL system rather than views because they are better at incorporating intelligence like workday lags, accounting for weekends and holidays<sup>pg 196</sup>.
     - Transactions and snapshots are the yin and yang of dimensional designs<sup>pg 122</sup>. Each provide different vantage points on the same story.
 - Additive, semi-additive, non-additive
     - Additive can be summed across any of the dimensions associated with the fact table<sup>pg 42</sup>.
@@ -77,6 +86,22 @@
     - A very large number of dimensions (more than 25) typically are a sign that several dimensions are not completely independent and should be combined into a single dimension. For example, it is a mistake to model a fact table with separate keys for `Date`, `Week`, `Month`, `Quarter`, `Year` dimensions or `Product`, `Product Category`, `Package Type` dimensions - these are clearly related attributes so should be included in the same dimension tables<sup>pg 108</sup>.
 - Conformed facts
     - If facts live in more than one dimensional model, the underlying definitions and equations for these facts must be the same if they are to be called the same thing<sup>pg 139</sup>.
+- Fact normalisation
+    - Some designers want to normalise a fact table so there is a single, generic fact amount along with a dimension that identifies the type of measurement. In this scenario, the fact table granularity is one row per measurement per transaction (or whatever the declared grain is), instead of a more natural one row per transaction<sup>pg 169</sup>
+    - This would only make sense when the set of facts is extremely lengthy but sparsely populated, but facts are usually not sparsely populated within a row.
+    - Arithmetic performed between facts is far easier if the facts are in the same row in a relational star schema.
+- Dates in fact tables
+    - Sometimes you discover other dates associated with each transaction, such as requested ship date. Each of the dates should be a foreign key in the fact table<sup>pg 170</sup>.
+    - Usually these dates are known when transaction occurs</sup>pg 188</sup>.
+    - Multiple dates in fact tables allow users to filter, group and trend on any of the dates provided<sup>pg 188</sup>.
+    - Just because a fact table has several dates does not mean that it is an accumulating snapshot. The primary differentiator of an accumulating snapshot is that fact rows are revisited as activity occurs.
+- Transaction facts at different granularity
+    - Common in header/line operational data to encounter facts of different granularity. For example, shipping charges on an order line fact table<sup>pg 185</sup> or multiple allowances applied to a single invoice line<sup>pg 190</sup>. First response should be to try to force all facts down to lowest level, broadly referred to as _allocating_<sup>pg 184</sup>.
+    - Do not mix fact granularities. Either allocate the higher-level facts to a more detailed level, or create two separate fact tables to handle the differently grained facts<sup>pg 185</sup>.
+    - There are several rather unappealing options to handling facts at different granularity:
+        - Repeat the unallocated header fact on every line, but runs risk of overstating header amount when summed on every line<sup>pg 186</sup>.
+        - Store the unallocated amount on the transaction's first or last line. Reduces risk of overcounting but requires query constraints to filter to first or last line<sup>pg 186</sup>.
+        - Set up a special product key for the header fact, but makes dimensional model harder to interpret<sup>pg 186</sup>.
 
 ### Dimension Tables for Descriptive Context
 
@@ -94,19 +119,22 @@
     - A flattened denormalised dimension table contains exactly the same information as a snowflaked dimension<sup>pg 50</sup>.
     - Normalising values into separate tables defeats the primary goals of **simplicity and performance**<sup>pg 84</sup>.
     - Dimensional model consciously breaks traditional data modelling rules to focus on simplicity and performance, not on transaction processing efficiencies<sup>pg 104</sup>.
+- Document the attribute definitions, interpretations and origins in the metadata (metadata is analogous to the DW/BI encyclopedia. Be vigilant about populating<sup>pg 173</sup>.
 
 #### Dimension Table Techniques
 
 - Dimension table structure
     - Every dimension table has a single primary key column, which is also embedded in any associated fact tables<sup>pg 46</sup>.
-    - Wide, flat, denormalised<sup>pg 46</sup>
-    - Populated with verbose descriptions<sup>pg 46</sup>. Cryptic abbreviations, operational codes or true/false flags should be replaced with full text words<sup>pg 48</sup>.
-    - Rather than decoding flags into understandable labels in the BI application, we prefer that decoded values be stored in the database so they are consistently available to all users regardless of their BI reporting environment<sup>pg 82</sup>.
-    - Separate heirarchies can gracefully coexist in the same dimension table<sup>pg 48</sup>.
+    - Wide, flat, denormalised<sup>pg 46</sup>.
+    - Populated with verbose, descriptive columns<sup>pg 46,172</sup>. Cryptic abbreviations, operational codes or true/false flags should be replaced with full text words<sup>pg 48</sup>.
+    - Rather than decoding flags into understandable labels in the BI application, we prefer that decoded values be stored in the database so they are consistently available to all users regardless of their BI reporting environment<sup>pg 82</sup>. Columns in a dimension are the sole source of query constraints and report labels so should be legible<sup>pg 173</sup>. Quality check the attribute values to ensure no misspellings, impossible values or multiple variations, and are completely populated (SQL will produce another line in a report if the attribute values varies in any way based on trivial punctuation or spelling differences)<sup>pg 173</sup>.
+    - Separate heirarchies can gracefully coexist in the same dimension table<sup>pg 48</sup>. Hierarchical data should be presented in a single, flattened denormalized table<sup>pg 172</sup>.
+    - Millions of rows in a dimension table is considered large<sup>pg 176</sup>.
+    - 25 dimensions in a single dimensional model is considered large, and model should consider combining dimensions<sup>pg 176</sup>.
 - Degenerate dimensions
     - Some fact tables have dimension keys for dimension tables that bear no context, i.e. invoice number. It is acknowledged there is no associated dimension table with this key<sup>pg 47</sup>.
-    - These can be useful for grouping purposes (i.e. grouping across basket transactions), and also linking back to operational system<sup>pg 93</sup>.
-    - Typically sits in a fact table but does not have a corresponding dimension table<sup>pg 94</sup>.
+    - These can be useful for grouping purposes (i.e. grouping across basket transactions), and also linking back to operational system<sup>pg 93,178</sup>.
+    - Typically sits in a fact table but does not have a corresponding dimension table<sup>pg 94</sup> and reserved for operational transaction identifiers<sup>pg 178</sup>.
     - Plays an important role in a fact table's primary key<sup>pg 94</sup>.
 - Nulls in dimension attribute values
     - When a dimension row has not been fully populated, or when there are attributes that are not applicable to all the dimension's rows<sup>pg 92</sup>.
@@ -120,6 +148,7 @@
     - Every join between dimension and fact tables should be based on meaningless integer surrogate keys. Avoid using a natural key as the dimension table's primary key<sup>pg 99</sup>.
     - Protects data warehouse from operational system changes. Maintain control over DW/BI environment, rather than being dictated by an operational systems' rule changes for generating, updating, recycling, reusing codes for natural keys. Many operational systems reuse IDs after a period of dormancy, surrogate keys provide a mechanism to differentiate separate instances of the same natural key<sup>pg 99</sup>.
     - Handle unknown conditions. Assign surrogate keys to identify cases not present in operational systems<sup>pg 100</sup>.
+    - Might be necessary to integrate product information sourced from different operation systems<sup>pg 173</sup>.
 - Extending dimensional design
     - You can add completely new dimensions to the schema as long as a single value of that dimension is defined for each existing fact row.
     - Create new dimension table and add another foreign key in the fact table<sup>pg 96</sup>.
@@ -163,6 +192,20 @@
     - Hybrid Techniques:
         - Type 5 Mini-Dimension: add a current mini-dimension key as an attribute in the primary dimension.
         - Type 6 Add 'Type 1' Attributes to 'Type 2' Dimension: issue a new row to capture the change (type 2) and add a new column to track the current assignment (type 3), where subsequent changes are overwritten (type 1)<sup>pg 161</sup>.
+- Dimension role playing
+    - Occurs when a single dimension (such as date) simultaneously appears several times in the same fact table<sup>pg 170</sup>.
+    - The underlying dimension may exist as a single physical table, but each of the roles should be presented to tbhe BI tools as a separately labelled view<sup>pg 170</sup>.
+    - Indicate the multiple roles within a single cell in the bus matrix<sup>pg 170</sup>.
+- Junk dimensions
+    - When modelling complex transactional source data, you often encounter a number of miscellaneous indicators and flags that are populated with a small range of discrete values<sup>pg 179</sup>.
+    - There are several rather unappealing options to handling miscellaneous indicators and flags:
+        - Ignore flags and indicators, but usually vetoed because someone occasionally needs them<sup>pg 179</sup>.
+        - Leave flags and indicators unchanged on the fact row, but fact rows should not contain bulky descriptiors or cryptic indicators<sup>pg 179</sup>.
+        - Make each flag and indicator into its own dimension, but should be avoided if the number of foreign keys is already more than 20 <sup>pg 179</sup>.
+        - Store flags and indicators in a transaction header dimension, using transaction number as a regular dimension. Should be avoided because this dimension will be very large, and there should be orders of magnitude difference between size of fact table and associated dimensions<sup>pg 181</sup>.
+    - Typically referred to as _transaction indicator_ or _transaction profile dimension_<sup>pg 180</sup>.
+    - Grouping of low-cardinality flags and indicators<sup>pg 180</sup>.
+    - Consideration needs to be given to whether junk dimension rows created for the full Cartesian product of all combinations beforehand or create junk dimension rows as they are encountered in data<sup>pg 180</sup>.
 
 ### Kimball's DW/BI Architecture
 
@@ -171,6 +214,7 @@
         - Special purpose applications.
         - Intended for one-record-at-a-time queries.
         - Without any commitment to sharing common data such as product, customer or calendar with other operational systems.
+        - Dimensional models contain data from many source systems, each with their own extract and transform programs<sup>pg 192</sup>.
     - ETL systems
         - Everything between the operational source systems and the DW/BI presentation area<sup>pg 19</sup>.
         - Extracting means reading and understanding the source data.
