@@ -95,6 +95,7 @@
     - Usually these dates are known when transaction occurs</sup>pg 188</sup>.
     - Multiple dates in fact tables allow users to filter, group and trend on any of the dates provided<sup>pg 188</sup>.
     - Just because a fact table has several dates does not mean that it is an accumulating snapshot. The primary differentiator of an accumulating snapshot is that fact rows are revisited as activity occurs.
+    - In general, "to-date" totals should be calculated in BI software, not stored in the fact table<sup>pg 206</sup>.
 - Transaction facts at different granularity
     - Common in header/line operational data to encounter facts of different granularity. For example, shipping charges on an order line fact table<sup>pg 185</sup> or multiple allowances applied to a single invoice line<sup>pg 190</sup>. First response should be to try to force all facts down to lowest level, broadly referred to as _allocating_<sup>pg 184</sup>.
     - Do not mix fact granularities. Either allocate the higher-level facts to a more detailed level, or create two separate fact tables to handle the differently grained facts<sup>pg 185</sup>.
@@ -102,6 +103,11 @@
         - Repeat the unallocated header fact on every line, but runs risk of overstating header amount when summed on every line<sup>pg 186</sup>.
         - Store the unallocated amount on the transaction's first or last line. Reduces risk of overcounting but requires query constraints to filter to first or last line<sup>pg 186</sup>.
         - Set up a special product key for the header fact, but makes dimensional model harder to interpret<sup>pg 186</sup>.
+    - Transactions at progressively lower levels of detail should be captured in separate fact tables with additional dimensionality<sup>pg 207</sup>.
+- Consolidated fact tables
+    - If drill-across analysis of multiple fact tables is extremely common in the user community, it likely makes sense to create a single fact table that combines the metrics once rather than relying on business users or their BI reporting applications to stitch together result sets<sup>pg 224</sup>.
+    - Fact tables that combine metrics from multiple business processes at a common granularity are referred to as _consolidated fact tables_<sup>pg 225</sup>.
+    - They often represent a dimensionality compromise as they consolidate facts from at the 'least common denominator' of dimensionality. Consolidated fact table facts must live at the same level of granularity and dimensionality. You are often forced to eliminate or aggregate some dimensions<sup>pg 225</sup>.
 
 ### Dimension Tables for Descriptive Context
 
@@ -206,6 +212,18 @@
     - Typically referred to as _transaction indicator_ or _transaction profile dimension_<sup>pg 180</sup>.
     - Grouping of low-cardinality flags and indicators<sup>pg 180</sup>.
     - Consideration needs to be given to whether junk dimension rows created for the full Cartesian product of all combinations beforehand or create junk dimension rows as they are encountered in data<sup>pg 180</sup>.
+- Dimension attribute hierarchies
+    - Fixed depth hierarchies:
+        - Fixed set of labels, all with meaningful labels. Such as calendar hierarchies. Think of the levels as roll-ups. Can be represeted in a single dimension table<sup>pg 214</sup>.
+    - Slightly ragged variable depth hierarchies:
+        - Propagate attribute values down to progressively complex hierarchies<sup>pg 215</sup>.
+    - Ragged variable depth hierarchies:
+        - The classic way to represent a parent/child tree structure is by placing recursive pointers in the dimension table from each row to its parent<sup>pg 216</sup>.
+        - The solution to the problem of representing arbitrary rollup structures is to build a special kind of _bridge table_ that is independent from the primary dimension table<sup>pg 216</sup>. The first column in the map table is the primary key of the parent, and the second column is the primary key of the child. A row must be constructed from each possible parent to each possible child, including a row that connects the parent to itself<sup>pg 217</sup> The 'highest parent' flag means the particular path comes from the highest parent in the tree, the 'lowest child' flag means the particular path ends in a "leaf node". Bridge tables are used by constraining the dimension table, joining to the bridge table, joined to the fact table<sup>pg 217</sup>.
+        - Bridge tables can also represent partial or shared ownership, in a 'percent ownership' attribute<sup>pg 219</sup>, and accommodate slowly changing hierarchies with the addition of start and end effective date/time attribute (making sure to constrain on these attributes to prevent double-counting)<sup>pg 220</sup>.
+        - An alternative approach is a pathstring attribute or 'modified preordered tree traversal' in the dimension table, but become complex if there are thousands of nodes in a tree, and difficult to maintain if hierarchy is changed<sup>pg 222</sup>.
+        - Disadvantages of bridge tables: require more ETL work to set up and more work when querying<sup>pg 223</sup>.
+        - Advantages of bridge tables: alternative rollup structures can be selected at query time, shared ownership rollups, time varying ragged hierarchies, limited impact if a SCD, limited impact when tree structure is changed<sup>pg 223</sup>.
 
 ### Kimball's DW/BI Architecture
 
