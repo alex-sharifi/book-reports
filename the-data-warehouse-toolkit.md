@@ -172,6 +172,13 @@
     - Snowflaked tables respond fine if there is just one lookup table, but become unwiedly when the user is required to traverse multiple dimension tables<sup>pg 106</sup>.
     - Even if a database vendor claims the horsepower to query a fully normalised dimensional model without query penalties, a logical and easy to use dimensional model is still required<sup>pg 106</sup>.
     - _Outriggers_ (special purpose tables specific to a particular dimension table) can be used sparingly. For example, when an analyst wants to filter and group a dimension table by non-standard calendar attributes (i.e. product introduction date attribute)<sup>pg 107</sup>.
+- Outrigger dimensions
+    - Though outriggers are permissible, a dimensional model should not be littered with outriggers given the potentially negative impact. Outriggers should be the exception rather than the rule<sup>pg 107</sup>.
+    - Outriggers almost always makes the user presentation more complex<sup>pg 243</sup>.
+    - There are several reasons for bending the "no snowflake" rule:
+        - If dimension data are available at significantly different grain than primary dimension data (i.e. demographic/socio-economic attributes relating to county of residence) and is not as analytically valuable<sup>pg 244</sup>.
+        - Loaded at different times than the rest of the data<sup>pg 244</sup>.
+        - Save significant space if the underlying dimension is large<sup>pg 244</sup>.
 - Date dimensions
     - A special dimension because it is nearly guaranteed to be in every dimensional model<sup>pg 79</sup>.
     - "Date dimension" means a _daily_ grained dimension table<sup>pg 80</sup>.
