@@ -62,6 +62,7 @@
             - Used for analysing the entire transaction pipeline, because it would be much harder to calculate average days between milestones in a transaction event fact table</sup>pg 194</sup>.
             - Reuse of conformed dimensions is to be expected<sup>pg 194</sup>.
             - Lag calulcations between events should be calculated in ETL system rather than views because they are better at incorporating intelligence like workday lags, accounting for weekends and holidays<sup>pg 196</sup>.
+            - This kind of design is successful when 90 percent or more of the events progress through the same steps without any unusual exceptions, but there is no good way to reveal what happened when an event deviates from the standard scenario<sup>pg 255</sup>. Unusual departures from the standard scenario are described by a Status dimension on the accumulating snapshot fact table: tag the fact row with the Status 'Weird', and join back onto fact table using companion Keys<sup>pg 256</sup>. 
     - Transactions and snapshots are the yin and yang of dimensional designs<sup>pg 122</sup>. Each provide different vantage points on the same story.
 - Additive, semi-additive, non-additive
     - Additive can be summed across any of the dimensions associated with the fact table<sup>pg 42</sup>.
@@ -108,6 +109,8 @@
     - If drill-across analysis of multiple fact tables is extremely common in the user community, it likely makes sense to create a single fact table that combines the metrics once rather than relying on business users or their BI reporting applications to stitch together result sets<sup>pg 224</sup>.
     - Fact tables that combine metrics from multiple business processes at a common granularity are referred to as _consolidated fact tables_<sup>pg 225</sup>.
     - They often represent a dimensionality compromise as they consolidate facts from at the 'least common denominator' of dimensionality. Consolidated fact table facts must live at the same level of granularity and dimensionality. You are often forced to eliminate or aggregate some dimensions<sup>pg 225</sup>.
+    - If business users are frequently combining data from multiple business processes, a final approach is to define an additional fact table that combines the data once into a consolidated fact table rather than relying on users to consistently and accurately combine the data on their own<sup>pg 260</sup>.
+   - Avoid fact-to-fact table joins. Be very careful when simultaneously joining a single dimension table to two fact tables of different cardinality. In many cases, relational engines return the "wrong" answer<sup>pg 260</sup>.
 
 ### Dimension Tables for Descriptive Context
 
@@ -126,6 +129,11 @@
     - Normalising values into separate tables defeats the primary goals of **simplicity and performance**<sup>pg 84</sup>.
     - Dimensional model consciously breaks traditional data modelling rules to focus on simplicity and performance, not on transaction processing efficiencies<sup>pg 104</sup>.
 - Document the attribute definitions, interpretations and origins in the metadata (metadata is analogous to the DW/BI encyclopedia. Be vigilant about populating<sup>pg 173</sup>.
+- The customer dimension is typically the most challenging dimension for any DW/BI system:
+    - Extremely deep (many millions of rows), extremely wide (hundreds of attributes), subject to rapid change, and often represents an amalgamation of data from multiple internal and external source systems<sup>pg 233</sup>.
+    - The data warehouse is the foundation that supports the panoramic 360-degree view of your customers<sup>pg 232</sup>.
+    - You can build a single customer dimension that us the "best of breed" choice among a number of available customer data sources, and is likely a distillation of data from several operational systems within the organisation<sup>pg 256</sup>. The attributes in the customer dimension should represent the "best" source available in the enterprise<sup>pg 257</sup>.
+    - Effective consolidation of customer data depends on a balance of capturing the data as accurately as possible in the source systems, coupled with powerful data cleaning/merging tools in the ETL process<sup>pg 258</sup>.
 
 #### Dimension Table Techniques
 
@@ -196,11 +204,19 @@
     - Enable you to combine performance measurements from different business processes in a single report ("drilling across fact tables")<sup>pg 130</sup>. Query each dimensional model separately and then outer-join the query results based on a common dimension attribute. Full outer-join ensures all rows are included in the report, even if they only appear in one set of query results. Also known as multipass, multi-select, multi-fact, or stitch queries, because metrics from different facts tables are brought together.
     - Identical conformed dimensions mean the same thing with every possible fact table to which they are joined. Dimension built once in ETL system and duplicated outward to each dimensional model<sup>pg 131</sup>.
     - Shrunken rollup conformed dimensions conform to the base atomic dimension if the attributes are a strict subset of the atomic dimension's attributes<sup>pg 132</sup>.
+    - In the ideal case, you examine all the data sources and define a single comprehensive dimension which you attach to all the data sources. In the extreme integration world with dozens of related dimensions of different granularity and different quality, such a single comprehensive dimension is impossible to build<sup>pg 258</sup>. Fortunately you can implement a lighter-weight kind of conformed dimension<sup>pg 258</sup>.
+    - The essential requirement for two dimensions to be conformed is they share one or more specically administered attributes that have the same column names and data values. Instead of requiring dozens of dimensions to be identical, you only require they share the specically administered conformed dimensions<sup>pg 258</sup>.
 - Slowly Changing Dimensions
     - Type 0 Retain Original: attribute values never change so facts are always grouped by original value. Appropriate for any attribute labeled "original"<sup>pg 148</sup>.
     - Type 1 Overwrite: overwrite the old attribute value in the dimension table, replacing it with the current value. Always reflects most recent assignment. Fact table is untouched. Easy to implement but does not maintain any history of prior attributes.
-    - Type 2 Add New Row: predominant technique for representing history. Create a new dimension row with a new single-column primary key to unqiuely identify the new profile<sup>pg 153</sup>. Accurately tracking slowly changing dimension attributes, by adding a new row in dimension representing new history state<sup>pg 151</sup>. Should include administrative columns, such as 'effective' and 'expiration' dates<sup>pg 152</sup>. Requires use of surrogate keys - because there will be multiple profile versions for the same natural key.
-    - Type 3 Add New Attribute: do not issue a new dimension row, but rather add a new column to capture the attribute change. Alter the dimension table to add a 'prior' attribute, and populate this new column with the _existing_ value, and treat original column as Type 1 (overwrite) with current value. All existing reports immediately switch over to the newest value, but can still report on old values by querying 'prior' attributes.<sup>pg 154</sup>. Appropriate when there is a strong need to support two views of the world simultaneously (_alternative realities_). Suitable where dimension attributes change at a predictable rhythm - current attributes are overwritten, and attributes for previous values are added for every dimension row<sup>pg 156</sup>.
+    - Type 2 Add New Row:
+        - Predominant technique for representing history. Create a new dimension row with a new single-column primary key to unqiuely identify the new profile<sup>pg 153</sup>.
+        - Accurately tracking slowly changing dimension attributes, by adding a new row in dimension representing new history state<sup>pg 151</sup>. Should include administrative columns, such as 'effective' and 'expiration' dates<sup>pg 152</sup>.
+        - Requires use of surrogate keys - because there will be multiple profile versions for the same natural key.
+        - If being used to track customer dimension changes, you need to be careful to avoid overcounting because you may have multiple rows in the customer dimension for the same individual<sup>pg 243</sup>.
+    - Type 3 Add New Attribute:
+        - Do not issue a new dimension row, but rather add a new column to capture the attribute change. Alter the dimension table to add a 'prior' attribute, and populate this new column with the _existing_ value, and treat original column as Type 1 (overwrite) with current value.
+        - All existing reports immediately switch over to the newest value, but can still report on old values by querying 'prior' attributes.<sup>pg 154</sup>. Appropriate when there is a strong need to support two views of the world simultaneously (_alternative realities_). Suitable where dimension attributes change at a predictable rhythm - current attributes are overwritten, and attributes for previous values are added for every dimension row<sup>pg 156</sup>.
     - Type 4 Add Mini-Dimension: break off frequently analysed or frequently changing dimensions into a separate dimension<sup>pg 156</sup>. One row in the mini-dimension for each unique combination of age, purchase frequency, income level, etc encountered in the data (not one row per customer). Continuously variable attributes, such as income are converted to banded ranges.
     - Hybrid Techniques:
         - Type 5 Mini-Dimension: add a current mini-dimension key as an attribute in the primary dimension.
@@ -222,15 +238,34 @@
 - Dimension attribute hierarchies
     - Fixed depth hierarchies:
         - Fixed set of labels, all with meaningful labels. Such as calendar hierarchies. Think of the levels as roll-ups. Can be represeted in a single dimension table<sup>pg 214</sup>.
+        - Suited for highly predictable with fixed number of levels<sup>pg 245</sup>.
     - Slightly ragged variable depth hierarchies:
         - Propagate attribute values down to progressively complex hierarchies<sup>pg 215</sup>.
+        - Duplicate lower-level values to populate the higher-level attributes<sup>pg 245</sup>.
     - Ragged variable depth hierarchies:
         - The classic way to represent a parent/child tree structure is by placing recursive pointers in the dimension table from each row to its parent<sup>pg 216</sup>.
         - The solution to the problem of representing arbitrary rollup structures is to build a special kind of _bridge table_ that is independent from the primary dimension table<sup>pg 216</sup>. The first column in the map table is the primary key of the parent, and the second column is the primary key of the child. A row must be constructed from each possible parent to each possible child, including a row that connects the parent to itself<sup>pg 217</sup> The 'highest parent' flag means the particular path comes from the highest parent in the tree, the 'lowest child' flag means the particular path ends in a "leaf node". Bridge tables are used by constraining the dimension table, joining to the bridge table, joined to the fact table<sup>pg 217</sup>.
-        - Bridge tables can also represent partial or shared ownership, in a 'percent ownership' attribute<sup>pg 219</sup>, and accommodate slowly changing hierarchies with the addition of start and end effective date/time attribute (making sure to constrain on these attributes to prevent double-counting)<sup>pg 220</sup>.
         - An alternative approach is a pathstring attribute or 'modified preordered tree traversal' in the dimension table, but become complex if there are thousands of nodes in a tree, and difficult to maintain if hierarchy is changed<sup>pg 222</sup>.
-        - Disadvantages of bridge tables: require more ETL work to set up and more work when querying<sup>pg 223</sup>.
-        - Advantages of bridge tables: alternative rollup structures can be selected at query time, shared ownership rollups, time varying ragged hierarchies, limited impact if a SCD, limited impact when tree structure is changed<sup>pg 223</sup>.
+- Bridge tables and positional design
+    - Bridge tables have uses other than for dimension attribute hierarchies.
+    - A fundamental tenet of dimensional modeling is to decide on the grain of the fact table, and then carefully add dimensions and facts to the design that are true to the grain<sup>pg 245</sup>. You do not want to change that grain<sup>pg 246</sup>.
+    - When faced with multivalued dimensions, there are two basic choices: a positional design or bridge table design<sup>pg 246</sup>.
+        - Positional designs have named columns for each attribute. Attractive because the multivalued dimension is spread out into named columns that are easy to query, but are not scaleable, and too many possibilities results in many nulls<sup>pg 246</sup>. Columnar databases are well suited to these kinds of designs because new columns can be added with minimal disruption<sup>pg 247</sup>. When the list of attributes is bounded and reasonably stable, a positional design is very effective<sup>pg 255</sup>.
+        - Bridge tables are recommended when the number of different attributes grows beyond your comfort zone, if new attributes are added frequently and whenever the number of variables is open-ended and unpredictable<sup>pg 247</sup>. They are powerful and remove the scaleability and null value problems with positional designs because the rows in the bridge table exist only if they are needed, but the resulting table design requires a complex query that can be beyond the normal reach of BI tools<sup>pg 246</sup>.
+    - Can also represent partial or shared ownership, in a 'percent ownership' attribute<sup>pg 219</sup>, and accommodate slowly changing hierarchies with the addition of start and end effective date/time attribute (making sure to constrain on these attributes to prevent double-counting)<sup>pg 220</sup>.
+    - Disadvantages of bridge tables: require more ETL work to set up and more work when querying<sup>pg 223</sup>.
+    - Advantages of bridge tables: alternative rollup structures can be selected at query time, shared ownership rollups, time varying ragged hierarchies, limited impact if a SCD, limited impact when tree structure is changed<sup>pg 223</sup>.
+- Behaviour tags
+    - The recommended way to build an explicit time series of attributes in the dimension table. This is another example of positional design. Should not be stored as regular facts, and are used to formulate complex query patterns<sup>pg 241</sup>.
+    - It would also be a good idea to create a single attribute with all the behaviour tags concatenated (such as CCCCDDDAAAABB) to support wildcard searches<sup>pg 242</sup>.
+    - For example, can be used to look at customers' time series data such as RFV (Recency, Frequency, Value) quintile cube development over time<sup>pg 241<sup>.
+- Aggregated facts as dimension attributes
+    - You can store an aggregated fact as a dimension. These attributes are meant to be used for constraining and labeling; they are not to be used in numeric calculations<sup>pg 239</sup>.
+    - The main burden falls on the back room ETL processes to ensure the attributes are accurate, up-to-date and consistent with the actual fact row<sup>pg 239</sup>.
+- Step dimension
+    - An abstract dimension defined in advance<sup>pg 251</sup>.
+    - Useful to constrain on specific steps in a online checkout journey<sup>pg 252</sup>.
+    - Another approach for modeling sequential behaviour takes advantage of specific fixed codes for each possible step such as a sequence of SKUS (not necessarily Product Dimension keys), i.e. 11254|45882|53340|74934<sup>pg 252</sup>.
 
 ### Kimball's DW/BI Architecture
 
