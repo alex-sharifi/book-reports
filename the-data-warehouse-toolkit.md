@@ -150,6 +150,7 @@
     - These can be useful for grouping purposes (i.e. grouping across basket transactions), and also linking back to operational system<sup>pg 93,178</sup>.
     - Typically sits in a fact table but does not have a corresponding dimension table<sup>pg 94</sup> and reserved for operational transaction identifiers<sup>pg 178</sup>.
     - Plays an important role in a fact table's primary key<sup>pg 94</sup>.
+    - The natural operational ticket number, such as the POS transaction number, sits by itself in the fact table without joining to a dimension table. Degenerate dimensions are very common when the grain of a fact table represents a single transaction or transaction line because the degenerate dimension represents the unique identifier of the parent<sup>pg 95</sup>.
 - Nulls in dimension attribute values
     - When a dimension row has not been fully populated, or when there are attributes that are not applicable to all the dimension's rows<sup>pg 92</sup>.
     - Null-valued dimension attributes should be substituted with a descriptive string, such as 'Unknown' or 'Not Applicable'<sup>pg 48</sup>.
