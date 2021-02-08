@@ -47,6 +47,9 @@
     - Contains numeric measures produced by an operational measurement event in the real world<sup>pg 41</sup>.
     - Based on a _physical activity_ and is not influenced by the eventual reports that may be produced<sup>pg 41</sup>.
     - Atomic data should be the foundation for every fact table design to withstand business users' ad hoc attacks.
+    - _Continuously valued_ numeric observations are almost always facts.
+    - If the numeric attributes are summarized rather than simply constrained upon, they belong in a fact table<sup>pg 265</sup>.
+    - Fact tables are typically limited to foreign keys, degenerate dimensions and numeric facts<sup>pg 278</sup>.
 - There are just three fundamental types of fact tables; transaction, periodic snapshot and accumulating snapshot<sup>pg 119</sup>. All three serve a useful purpose, and often need two to complement each other.
     - Transaction fact tables are the most fundamental view of operations, at the individual transaction line level<sup>pg 120</sup>. A row exists in the fact table only if a transaction event occurred. Naturally most atomic and enables analysis at extreme detail. However you cannot survive on transactions alone.
     - Snapshot fact tables
@@ -120,7 +123,6 @@
 - Contain the entry points and descriptive labels that enable the DW/BI system to be leveraged for analysis<sup>pg 40</sup>.
 - Often have many columns (sometimes 50 to 100).
 - The dimension tables _primary key_ (surrogate key) which serves as basis for referential integrity with any given fact table to which it is joined.
-- _Continuously valued_ numeric observations are almost always facts.
 - _Discrete_ numeric observations drawn from a small list are almost always dimension attributes.
 - Dimension tables often represent heirarchical relationships - heirarchical descriptive information is stored redundantly in the spirit of ease of use and query performance.
     - Resist the urge to normalise data. This normalisation is called _snowflaking_<sup>pg 15</sup>.
@@ -128,7 +130,7 @@
     - A flattened denormalised dimension table contains exactly the same information as a snowflaked dimension<sup>pg 50</sup>.
     - Normalising values into separate tables defeats the primary goals of **simplicity and performance**<sup>pg 84</sup>.
     - Dimensional model consciously breaks traditional data modelling rules to focus on simplicity and performance, not on transaction processing efficiencies<sup>pg 104</sup>.
-- Document the attribute definitions, interpretations and origins in the metadata (metadata is analogous to the DW/BI encyclopedia. Be vigilant about populating<sup>pg 173</sup>.
+- Document the attribute definitions, interpretations and origins in the metadata (metadata is analogous to the DW/BI encyclopedia). Be vigilant about populating<sup>pg 173</sup>.
 - The customer dimension is typically the most challenging dimension for any DW/BI system:
     - Extremely deep (many millions of rows), extremely wide (hundreds of attributes), subject to rapid change, and often represents an amalgamation of data from multiple internal and external source systems<sup>pg 233</sup>.
     - The data warehouse is the foundation that supports the panoramic 360-degree view of your customers<sup>pg 232</sup>.
@@ -145,6 +147,8 @@
     - Separate heirarchies can gracefully coexist in the same dimension table<sup>pg 48</sup>. Hierarchical data should be presented in a single, flattened denormalized table<sup>pg 172</sup>.
     - Millions of rows in a dimension table is considered large<sup>pg 176</sup>.
     - 25 dimensions in a single dimensional model is considered large, and model should consider combining dimensions<sup>pg 176</sup>.
+    - You certainly do not want to have as many rows in a fact table as you do in a related dimension table<sup>pg 264</sup>.
+    - If the cardinality of a dimension table is less than the number of transactions in the fact table, attribute values should be captured in a separate dimension table. If there is a unique attribute value for every event, it is treated as a transaction-grained dimension attribute.
 - Degenerate dimensions
     - Some fact tables have dimension keys for dimension tables that bear no context, i.e. invoice number. It is acknowledged there is no associated dimension table with this key<sup>pg 47</sup>.
     - These can be useful for grouping purposes (i.e. grouping across basket transactions), and also linking back to operational system<sup>pg 93,178</sup>.
@@ -164,6 +168,12 @@
     - Protects data warehouse from operational system changes. Maintain control over DW/BI environment, rather than being dictated by an operational systems' rule changes for generating, updating, recycling, reusing codes for natural keys. Many operational systems reuse IDs after a period of dormancy, surrogate keys provide a mechanism to differentiate separate instances of the same natural key<sup>pg 99</sup>.
     - Handle unknown conditions. Assign surrogate keys to identify cases not present in operational systems<sup>pg 100</sup>.
     - Might be necessary to integrate product information sourced from different operation systems<sup>pg 173</sup>.
+- Natural keys
+    - Created by the operational source systems, subject to business rules outside the control of the DW/BI system, i.e. employee number<sup>pg 47</sup>.
+    - When the data warehouse wants to have a single key for an entity (i.e. an employee), a new _durable key_ (sometimes known as _durable supernatural key_ must be created that is persistent, does not change and is independent of the original business process<sup>pg 48</sup>.
+    - While multiple surrogate keys may be associated with a row as the profile changes (i.e. an employee), the durable key never changes<sup>pg 49</sup>.
+    - Often modelled as an attribute in the dimension table<sup>pg 100</sup>.
+    - In a dimension table with Type 2 slowly changing dimensions, it is important to have an identifier that uniquely and reliably indentifies the dimension entity across its attribute changes<sup>pg 101,265</sup>.
 - Extending dimensional design
     - You can add completely new dimensions to the schema as long as a single value of that dimension is defined for each existing fact row.
     - Create new dimension table and add another foreign key in the fact table<sup>pg 96</sup>.
@@ -215,6 +225,8 @@
         - Accurately tracking slowly changing dimension attributes, by adding a new row in dimension representing new history state<sup>pg 151</sup>. Should include administrative columns, such as 'effective' and 'expiration' dates<sup>pg 152</sup>.
         - Requires use of surrogate keys - because there will be multiple profile versions for the same natural key.
         - If being used to track customer dimension changes, you need to be careful to avoid overcounting because you may have multiple rows in the customer dimension for the same individual<sup>pg 243</sup>.
+        - Current row indicators enable the most recent status to be retrieved quickly<sup>pg 266</sup>.
+        - Changes can be embellished with a change reason. Because multiple dimension attributes may change concurrently and be represented by a single new row in the dimension, the change reason would be multi-valued. The multiple reason codes could be handled as a single text string attribute, or via a multi-valued bridge table<sup>pg 266</sup>.
     - Type 3 Add New Attribute:
         - Do not issue a new dimension row, but rather add a new column to capture the attribute change. Alter the dimension table to add a 'prior' attribute, and populate this new column with the _existing_ value, and treat original column as Type 1 (overwrite) with current value.
         - All existing reports immediately switch over to the newest value, but can still report on old values by querying 'prior' attributes.<sup>pg 154</sup>. Appropriate when there is a strong need to support two views of the world simultaneously (_alternative realities_). Suitable where dimension attributes change at a predictable rhythm - current attributes are overwritten, and attributes for previous values are added for every dimension row<sup>pg 156</sup>.
@@ -250,14 +262,16 @@
 - Bridge tables and positional design
     - Bridge tables have uses other than for dimension attribute hierarchies.
     - A fundamental tenet of dimensional modeling is to decide on the grain of the fact table, and then carefully add dimensions and facts to the design that are true to the grain<sup>pg 245</sup>. You do not want to change that grain<sup>pg 246</sup>.
-    - When faced with multivalued dimensions, there are two basic choices: a positional design or bridge table design<sup>pg 246</sup>.
-        - Positional designs have named columns for each attribute. Attractive because the multivalued dimension is spread out into named columns that are easy to query, but are not scaleable, and too many possibilities results in many nulls<sup>pg 246</sup>. Columnar databases are well suited to these kinds of designs because new columns can be added with minimal disruption<sup>pg 247</sup>. When the list of attributes is bounded and reasonably stable, a positional design is very effective<sup>pg 255</sup>.
-        - Bridge tables are recommended when the number of different attributes grows beyond your comfort zone, if new attributes are added frequently and whenever the number of variables is open-ended and unpredictable<sup>pg 247</sup>. They are powerful and remove the scaleability and null value problems with positional designs because the rows in the bridge table exist only if they are needed, but the resulting table design requires a complex query that can be beyond the normal reach of BI tools<sup>pg 246</sup>.
+    - When faced with multi-valued dimensions, there are two basic choices: a positional design or bridge table design<sup>pg 246</sup>.
+        - Positional designs have named columns for each attribute. Attractive because the multivalued dimension is spread out into named columns that are easy to query and deliver fast query performance<sup>pg 275</sup>, but are not scaleable, and too many possibilities results in many nulls<sup>pg 246</sup>. Columnar databases are well suited to these kinds of designs because new columns can be added with minimal disruption<sup>pg 247</sup>. When the list of attributes is bounded and reasonably stable, a positional design is very effective<sup>pg 255</sup>.
+        - Bridge tables are recommended when the number of different attributes grows beyond your comfort zone, if new attributes are added frequently and whenever the number of variables is open-ended and unpredictable<sup>pg 247</sup>. They are powerful and remove the scaleability and null value problems with positional designs because the rows in the bridge table exist only if they are needed, but the resulting table design requires a complex query that can be beyond the normal reach of BI tools<sup>pg 246</sup> and bridge tables should be buried within a canned BI application<sup>pg 274</sup>. 
     - Can also represent partial or shared ownership, in a 'percent ownership' attribute<sup>pg 219</sup>, and accommodate slowly changing hierarchies with the addition of start and end effective date/time attribute (making sure to constrain on these attributes to prevent double-counting)<sup>pg 220</sup>.
     - Disadvantages of bridge tables: require more ETL work to set up and more work when querying<sup>pg 223</sup>.
     - Advantages of bridge tables: alternative rollup structures can be selected at query time, shared ownership rollups, time varying ragged hierarchies, limited impact if a SCD, limited impact when tree structure is changed<sup>pg 223</sup>.
-- Behaviour tags
+    - There is no silver bullet solution for handling complex structures in a simple and fast way<sup>pg 274</sup>.
+- Behaviour tags and text strings
     - The recommended way to build an explicit time series of attributes in the dimension table. This is another example of positional design. Should not be stored as regular facts, and are used to formulate complex query patterns<sup>pg 241</sup>.
+    - Remove many-many bridge tables by adding a dimension outrigger containing one long text string concatenating all keywords into a list key. You would need a special delimiter such as a backslash or pipe at the beginning of the string and after each value. The use of an outrigger dimension presumes a number of entities share a common list of values<sup>pg 276</sup>.
     - It would also be a good idea to create a single attribute with all the behaviour tags concatenated (such as CCCCDDDAAAABB) to support wildcard searches<sup>pg 242</sup>.
     - For example, can be used to look at customers' time series data such as RFV (Recency, Frequency, Value) quintile cube development over time<sup>pg 241<sup>.
 - Aggregated facts as dimension attributes
