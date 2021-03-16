@@ -68,6 +68,9 @@
         - Reuse of conformed dimensions is to be expected<sup>pg 194</sup>.
         - Lag calulcations between events should be calculated in ETL system rather than views because they are better at incorporating intelligence like workday lags, accounting for weekends and holidays<sup>pg 196</sup>.
         - This kind of design is successful when 90 percent or more of the events progress through the same steps without any unusual exceptions, but there is no good way to reveal what happened when an event deviates from the standard scenario<sup>pg 255</sup>. Unusual departures from the standard scenario are described by a Status dimension on the accumulating snapshot fact table: tag the fact row with the Status 'Weird', and join back onto fact table using companion Keys<sup>pg 256</sup>. 
+        - A single row represents the complete history of a workflow or pipeline instance<sup>pg 326</sup>.
+        - Facts often include metrics corresponding to each milestone, plus status counts and elapsed duration<sup>pg 326</sup>.
+        - Each row is revisited and updated whenever the pipeline instance changes; both foreign keys and measured facts may be changed during the fact row updates<sup>pg 326</sup>. They do not preserve counts and statuses at critical points, hence analysts might also want to retain snapshots at several important cut-off dates<sup>pg 329</sup>.
     - Transactions and snapshots are the yin and yang of dimensional designs<sup>pg 122</sup>. Each provide different vantage points on the same story.
     - After the base processes have been built, it may be useful to design complementary schemas, such as summary aggregations, accumulating snapshots that look across a workflow of processes, consolidated fact tables that combine facts from multiple processes to a common granularity, or subset fact tables that provide access to a limited subset of fact data for security or data distribution purposes<sup>pg 300</sup>.
 - Supertype and subtype schemas
@@ -93,7 +96,11 @@
     - Since we should avoud `null` in foreign keys, substitute historical data with a default dimension surrogate key corresponding to 'Prior to New Change' and new data that does not include the attribute with 'Not Applicable'<sup>pg 96</sup>.
     - New measured facts can be added by a new column to the fact table, and values populated (assuming same grain as the existing facts)<sup>pg 97</sup>.
 - Factless fact tables
-    - To do
+    - Events are modeled as fact tables containing a series of keys, each representing a participating dimension in the event. Event tables sometimes have no variable measurement facts associated with them and hence are called factless fact tables<sup>pg 332</sup>.
+    - Each fact table typically has 5 to approximately 20 foreign key columns, followed by one to potentially several dozen numeric, continuously valued, preferably additive facts<sup>pg 329</sup>.
+    - The facts can be regarded as measurements taken at the intersection of the dimension key values. From this perspective, the facts are the justification for the fact table, and the key values are simply administrative structure to identify the facts<sup>pg 330</sup>.
+    - A fact table represents the robust set of many-many relationships among dimensions; it records the collision of dimensions at a point in time and space<sup>pg 331</sup>.
+     - If a measurable fact does surface during the design, it can be added to the schema assuming it is consistent with the grain<sup>pg 332</sup>.
 - 'Centipede' fact tables
     - A very large number of dimensions (more than 25) typically are a sign that several dimensions are not completely independent and should be combined into a single dimension. For example, it is a mistake to model a fact table with separate keys for `Date`, `Week`, `Month`, `Quarter`, `Year` dimensions or `Product`, `Product Category`, `Package Type` dimensions - these are clearly related attributes so should be included in the same dimension tables<sup>pg 108</sup>.
     - If the fact table has more than 20 or so foreign keys, you should look for opportunities to combine or collapse dimensions<sup>pg 302</sup>.
@@ -300,6 +307,11 @@
     - Another approach for modeling sequential behaviour takes advantage of specific fixed codes for each possible step such as a sequence of SKUS (not necessarily Product Dimension keys), i.e. 11254|45882|53340|74934<sup>pg 252</sup>.
 - Combining correlated dimensions
     - If a many-many relationship exists between two groups of dimension attributes, they should be modeled as separate dimensions with separate foreign keys in the fact table. Sometimes, however, you encounter situations where these dimensions can be combined into a single dimension rather than treating them as two separate dimensions with two separate foreign keys in the fact table<sup>pg 318</sup>.
+- Multi-valued dimension attributes
+     - Some dimension attributes take on multiple values for the fact table's declared grain<sup>pg 333</sup>. There are several options. Also see _Transaction facts at different granularity_:
+         - Alter the grain of the fact table, but could lead to unnatural granularity that would be prone to overstated count errors.
+         - Add a bridge table with a group key.
+         - Concatenate the names into a single, delimited attribute. Enables easy report labelling but would not support analysis of events by specific dimension characteristics.
 
 ### Kimball's DW/BI Architecture
 
