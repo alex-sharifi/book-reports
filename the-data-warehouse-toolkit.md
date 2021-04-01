@@ -52,11 +52,13 @@
     - _Continuously valued_ numeric observations are almost always facts.
     - If the numeric attributes are summarized rather than simply constrained upon, they belong in a fact table<sup>pg 265</sup>.
     - Fact tables are typically limited to foreign keys, degenerate dimensions and numeric facts<sup>pg 278</sup>.
-    - You should prohibit text fields, including cryptic indicators and flags, from the fact table<sup>pg 301</sup>.
-- There are just three fundamental types of fact tables; transaction, periodic snapshot and accumulating snapshot<sup>pg 119</sup>. All three serve a useful purpose, and often need two to complement each other.
+    - You should prohibit text fields, including cryptic indicators and flags, from the fact table<sup>pg 301</sup>. Textual comments should not be stored in a fact table directly because they waste space and rarely participate in queries<sup>pg 350</sup>.
+    - The fact table's granularity determines what constitutes a fact table row. In other words, what is the measurement event being recorded?<sup>pg 342</sup>
+- There are just three fundamental types of fact tables; transaction, periodic snapshot and accumulating snapshot<sup>pg 119</sup>. All three serve a useful purpose, and often need two to complement each other. Whenever a source business process is considered for inclusion in the DW/BI system, there are three essential grain choices<sup>pg 342</sup>.
     - Transaction fact tables are the most fundamental view of operations, at the individual transaction line level<sup>pg 120</sup>. A row exists in the fact table only if a transaction event occurred. Naturally most atomic and enables analysis at extreme detail. However you cannot survive on transactions alone.
+    - The transaction grain is the most fundamental<sup>pg 342</sup>.
     - There is more to life than transactions alone. Some form of a snapshot table to give a more cumulative view of a process often complements a transaction fact table<sup>pg 117</sup>.
-    - Periodic snapshot are needed to see the cumulative performance of an operation at regular and predictable intervals<sup>pg 120</sup>, and cover all facts at a given snapshot date<sup>pg 113</sup>. You take a 'picture' of the activity at the end of a given day, week, month. Stacked consecutively into the fact table<sup>pg 120</sup>. Represents an aggregation of the transactional activity that occurred during a time period. Can include non-events. Good for long-running scenarios<sup>pg 139</sup>.
+    - Periodic snapshot are needed to see the cumulative performance of an operation at regular and predictable intervals<sup>pg 120</sup>, and cover all facts at a given snapshot date<sup>pg 113</sup>. You take a 'picture' of the activity at the end of a given day, week, month. Stacked consecutively into the fact table<sup>pg 120</sup>. Represents an aggregation of the transactional activity that occurred during a time period. Can include non-events. Good for long-running scenarios<sup>pg 139,342</sup>.
     - Accumulating snapshot are used for processes that have a definite beginning, middle and end.
         - Preferably short-lived processes<sup>196</sup>.
         - Further changes to a single row are tracked on the same row. Suitable if rows are tracked by serial number, etc. Fundamental difference between accumulating snapshot and other fact tables is that existing fact table rows are revisited and updated as more information becomes available<sup>pg 195</sup>.
@@ -67,10 +69,11 @@
         - Used for analysing the entire transaction pipeline, because it would be much harder to calculate average days between milestones in a transaction event fact table</sup>pg 194</sup>.
         - Reuse of conformed dimensions is to be expected<sup>pg 194</sup>.
         - Lag calulcations between events should be calculated in ETL system rather than views because they are better at incorporating intelligence like workday lags, accounting for weekends and holidays<sup>pg 196</sup>.
-        - This kind of design is successful when 90 percent or more of the events progress through the same steps without any unusual exceptions, but there is no good way to reveal what happened when an event deviates from the standard scenario<sup>pg 255</sup>. Unusual departures from the standard scenario are described by a Status dimension on the accumulating snapshot fact table: tag the fact row with the Status 'Weird', and join back onto fact table using companion Keys<sup>pg 256</sup>. 
+        - This kind of design is successful when 90 percent or more of the events progress through the same steps without any unusual exceptions, but there is no good way to reveal what happened when an event deviates from the standard scenario<sup>pg 255</sup>. Unusual departures from the standard scenario are described by a Status dimension on the accumulating snapshot fact table: tag the fact row with the Status 'Weird', and join back onto fact table using companion Keys<sup>pg 256</sup>. Accumulating snapshot does not attempt to fully describe unusual situations, so companion transaction schemas inevitably will be needed<sup>pg 343</sup>.
         - A single row represents the complete history of a workflow or pipeline instance<sup>pg 326</sup>.
         - Facts often include metrics corresponding to each milestone, plus status counts and elapsed duration<sup>pg 326</sup>.
         - Each row is revisited and updated whenever the pipeline instance changes; both foreign keys and measured facts may be changed during the fact row updates<sup>pg 326</sup>. They do not preserve counts and statuses at critical points, hence analysts might also want to retain snapshots at several important cut-off dates<sup>pg 329</sup>.
+        - The row represents the accumulated history of the line item from the moment of creation to the current state<sup>pg 343</sup>.
     - Transactions and snapshots are the yin and yang of dimensional designs<sup>pg 122</sup>. Each provide different vantage points on the same story.
     - After the base processes have been built, it may be useful to design complementary schemas, such as summary aggregations, accumulating snapshots that look across a workflow of processes, consolidated fact tables that combine facts from multiple processes to a common granularity, or subset fact tables that provide access to a limited subset of fact data for security or data distribution purposes<sup>pg 300</sup>.
 - Supertype and subtype schemas
@@ -227,6 +230,7 @@
         4. There are many date attributes not supported by the SQL date function<sup>pg 82</sup>.
     - Time-of-day should be handled as a simple date/time fact in the fact table<sup>pg 83</sup>.
     - Date dimension smart keys: it is common to assign the primary key of a date dimension, and foreign key of a fact table, as a meaningful integer such as yyyymmdd. Although not intended to provide BI applications with a mechanism to bypass a join between fact table and date dimension (and directly query the fact table), it is useful for partitioning fact tables. It allows old data to be removed gracefully<sup>pg 102</sup>.
+    - On accumulating snapshot fact tables where a workflow event has not occurred yet, surrogate date keys must not be null and must point to a date dimension row reserved for a To Be Determined date<sup>pg 345</sup>.
 - Conformed dimensions
     - Shared across business process fact tables<sup>pg 130</sup>.
     - Built once in ETL system and replicated either logically or physically throughout the enterprise DW/BI environment, a policy mandated by CIO<sup>pg 130</sup>.
@@ -262,6 +266,7 @@
     - Occurs when a single dimension (such as date) simultaneously appears several times in the same fact table<sup>pg 170</sup>.
     - The underlying dimension may exist as a single physical table, but each of the roles should be presented to tbhe BI tools as a separately labelled view<sup>pg 170</sup>.
     - Indicate the multiple roles within a single cell in the bus matrix<sup>pg 170</sup>.
+    - Date foreign keys should not join to a single instance of the date dimension table. Instead, create views on the single underlying date dimension table, and join the fact table separately to these views<sup>pg 345</sup>.
 - Junk dimensions
     - When modelling complex transactional source data, you often encounter a number of miscellaneous indicators and flags that are populated with a small range of discrete values<sup>pg 179</sup>.
     - There are several rather unappealing options to handling miscellaneous indicators and flags:
@@ -287,7 +292,7 @@
     - Bridge tables have uses other than for dimension attribute hierarchies.
     - A fundamental tenet of dimensional modeling is to decide on the grain of the fact table, and then carefully add dimensions and facts to the design that are true to the grain<sup>pg 245</sup>. You do not want to change that grain<sup>pg 246</sup>.
     - When faced with multi-valued dimensions, there are two basic choices: a positional design or bridge table design<sup>pg 246</sup>.
-        - Positional designs have named columns for each attribute. Attractive because the multivalued dimension is spread out into named columns that are easy to query and deliver fast query performance<sup>pg 275</sup>, but are not scaleable, and too many possibilities results in many nulls<sup>pg 246</sup>. Columnar databases are well suited to these kinds of designs because new columns can be added with minimal disruption<sup>pg 247</sup>. When the list of attributes is bounded and reasonably stable, a positional design is very effective<sup>pg 255</sup>.
+        - Positional designs have named columns for each attribute. Attractive because the multi-valued dimension is spread out into named columns that are easy to query and deliver fast query performance<sup>pg 275</sup>, but are not scaleable, and too many possibilities results in many nulls<sup>pg 246</sup>. Columnar databases are well suited to these kinds of designs because new columns can be added with minimal disruption<sup>pg 247</sup>. When the list of attributes is bounded and reasonably stable, a positional design is very effective<sup>pg 255</sup>.
         - Bridge tables are recommended when the number of different attributes grows beyond your comfort zone, if new attributes are added frequently and whenever the number of variables is open-ended and unpredictable<sup>pg 247</sup>. They are powerful and remove the scaleability and null value problems with positional designs because the rows in the bridge table exist only if they are needed, but the resulting table design requires a complex query that can be beyond the normal reach of BI tools<sup>pg 246</sup> and bridge tables should be buried within a canned BI application<sup>pg 274</sup>. An open-ended, many-valued attribute can be associated with a dimension row by using a bridge table to associate the many-valued attributes with the dimension<sup>pg 288</sup>.
     - Can also represent partial or shared ownership, in a 'percent ownership' attribute<sup>pg 219</sup>, and accommodate slowly changing hierarchies with the addition of start and end effective date/time attribute (making sure to constrain on these attributes to prevent double-counting)<sup>pg 220</sup>.
     - Disadvantages of bridge tables: require more ETL work to set up and more work when querying<sup>pg 223</sup>.
@@ -298,6 +303,7 @@
     - Remove many-many bridge tables by adding a dimension outrigger containing one long text string concatenating all keywords into a list key. You would need a special delimiter such as a backslash or pipe at the beginning of the string and after each value. The use of an outrigger dimension presumes a number of entities share a common list of values<sup>pg 276</sup>.
     - It would also be a good idea to create a single attribute with all the behaviour tags concatenated (such as CCCCDDDAAAABB) to support wildcard searches<sup>pg 242</sup>.
     - For example, can be used to look at customers' time series data such as RFV (Recency, Frequency, Value) quintile cube development over time<sup>pg 241<sup>.
+    - Unbounded text comments should either be stored in a separate comments dimension or treated as attributes in a transaction event dimension<sup>pg 350</sup>.
 - Aggregated facts as dimension attributes
     - You can store an aggregated fact as a dimension. These attributes are meant to be used for constraining and labeling; they are not to be used in numeric calculations<sup>pg 239</sup>.
     - The main burden falls on the back room ETL processes to ensure the attributes are accurate, up-to-date and consistent with the actual fact row<sup>pg 239</sup>.
@@ -308,10 +314,12 @@
 - Combining correlated dimensions
     - If a many-many relationship exists between two groups of dimension attributes, they should be modeled as separate dimensions with separate foreign keys in the fact table. Sometimes, however, you encounter situations where these dimensions can be combined into a single dimension rather than treating them as two separate dimensions with two separate foreign keys in the fact table<sup>pg 318</sup>.
 - Multi-valued dimension attributes
-     - Some dimension attributes take on multiple values for the fact table's declared grain<sup>pg 333</sup>. There are several options. Also see _Transaction facts at different granularity_:
-         - Alter the grain of the fact table, but could lead to unnatural granularity that would be prone to overstated count errors.
-         - Add a bridge table with a group key.
-         - Concatenate the names into a single, delimited attribute. Enables easy report labelling but would not support analysis of events by specific dimension characteristics.
+    - Normally the dimensions surrounding a fact table take on a single value in the context of a fact event. However, there are situations where multivaluedness is natural and unavoidable<sup>pg 345</sup>.
+    - Some dimension attributes take on multiple values for the fact table's declared grain<sup>pg 333</sup>. There are several options. Also see _Transaction facts at different granularity_:
+        - Alter the grain of the fact table, but could lead to unnatural granularity that would be prone to overstated count errors.
+        - Add a bridge table with a group key.
+        - Concatenate the names into a single, delimited attribute. Enables easy report labelling but would not support analysis of events by specific dimension characteristics.
+    - Weighting factors in multi-valued bridge tables provide an elegant way to prorate numeric facts to produce correctly weighted reports. However, these weighting factors are by no means required in a dimensional design. If there is no agreement or enthusiasm within the business community for the weighting factors they should be left out. Also, in a schema with more than one multi-valued dimension, it is not worth trying to decide how multiple weighting factors would interact<sup>pg 346</sup>.
 
 ### Kimball's DW/BI Architecture
 
