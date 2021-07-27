@@ -52,12 +52,14 @@
     - _Continuously valued_ numeric observations are almost always facts.
     - If the numeric attributes are summarized rather than simply constrained upon, they belong in a fact table<sup>pg 265</sup>.
     - Fact tables are typically limited to foreign keys, degenerate dimensions and numeric facts<sup>pg 278</sup>.
-    - You should prohibit text fields, including cryptic indicators and flags, from the fact table<sup>pg 301</sup>. Textual comments should not be stored in a fact table directly because they waste space and rarely participate in queries<sup>pg 350</sup>.
-    - The fact table's granularity determines what constitutes a fact table row. In other words, what is the measurement event being recorded?<sup>pg 342</sup>
+    - You should prohibit text fields, including cryptic indicators and flags, from the fact table<sup>pg 301</sup>. Textual comments should not be stored in a fact table directly because they waste space and rarely participate in queries<sup>pg 350</sup>. If textual characteristics are used for query filtering or report labeling, then they belong in a dimension<sup>pg 383</sup>.
+    - The fact table's granularity determines what constitutes a fact table row. In other words, what is the measurement event being recorded?<sup>pg 342</sup>.
+    - There are trade-offs between creating separate fact table for each natural cluster of transaction types versus lumping the transactions into a single fact table<sup>pg 378</sup>. See page 144 for more details.
+    - The natural conflict between the detailed transaction view and the snapshot perspective almost always requires building both kinds of fact tables un the warehouse<sup>pg 378</sup>.
 - There are just three fundamental types of fact tables; transaction, periodic snapshot and accumulating snapshot<sup>pg 119</sup>. All three serve a useful purpose, and often need two to complement each other. Whenever a source business process is considered for inclusion in the DW/BI system, there are three essential grain choices<sup>pg 342</sup>.
     - Transaction fact tables are the most fundamental view of operations, at the individual transaction line level<sup>pg 120</sup>. A row exists in the fact table only if a transaction event occurred. Naturally most atomic and enables analysis at extreme detail. However you cannot survive on transactions alone.
-    - The transaction grain is the most fundamental<sup>pg 342</sup>.
-    - There is more to life than transactions alone. Some form of a snapshot table to give a more cumulative view of a process often complements a transaction fact table<sup>pg 117</sup>.
+    - The transaction grain is the most fundamental<sup>pg 342</sup>. Transaction fact tables are useful for answering a wide range of questions, however the blizzard of transactions makes it difficult to quickly determine the status or financial value of a sale/policy/project at a given point in time <sup>pg 385</sup>.
+    - There is more to life than transactions alone. Some form of a snapshot table to give a more cumulative view of a process often complements a transaction fact table<sup>pg 117</sup>. Even with a robust transaction schema, there is a whole class of urgent business questions that cannot be answered using only transaction detail<sup>pg 392</sup>.
     - Periodic snapshot are needed to see the cumulative performance of an operation at regular and predictable intervals<sup>pg 120</sup>, and cover all facts at a given snapshot date<sup>pg 113</sup>. You take a 'picture' of the activity at the end of a given day, week, month. Stacked consecutively into the fact table<sup>pg 120</sup>. Represents an aggregation of the transactional activity that occurred during a time period. Can include non-events. Good for long-running scenarios<sup>pg 139,342</sup>.
     - Accumulating snapshot are used for processes that have a definite beginning, middle and end.
         - Preferably short-lived processes<sup>196</sup>.
@@ -69,13 +71,13 @@
         - Used for analysing the entire transaction pipeline, because it would be much harder to calculate average days between milestones in a transaction event fact table</sup>pg 194</sup>.
         - Reuse of conformed dimensions is to be expected<sup>pg 194</sup>.
         - Lag calulcations between events should be calculated in ETL system rather than views because they are better at incorporating intelligence like workday lags, accounting for weekends and holidays<sup>pg 196</sup>.
-        - This kind of design is successful when 90 percent or more of the events progress through the same steps without any unusual exceptions, but there is no good way to reveal what happened when an event deviates from the standard scenario<sup>pg 255</sup>. Unusual departures from the standard scenario are described by a Status dimension on the accumulating snapshot fact table: tag the fact row with the Status 'Weird', and join back onto fact table using companion Keys<sup>pg 256</sup>. Accumulating snapshot does not attempt to fully describe unusual situations, so companion transaction schemas inevitably will be needed<sup>pg 343</sup>.
+        - This kind of design is successful when 90 percent or more of the events progress through the same steps without any unusual exceptions, but there is no good way to reveal what happened when an event deviates from the standard scenario<sup>pg 255</sup>. An accumulating snapshot does a great job of presenting a workflow's current state, but it obliterates the intermediate states<sup>pg 394</sup>. Unusual departures from the standard scenario are described by a Status dimension on the accumulating snapshot fact table: tag the fact row with the Status 'Weird', and join back onto fact table using companion Keys<sup>pg 256</sup>. Accumulating snapshot does not attempt to fully describe unusual situations, so companion transaction schemas inevitably will be needed<sup>pg 343</sup>. Accumulating snapshot fact tables are typically appropriate for predictable workflows with well-established milestones with usually 10 key milestone dates representing the pipeline's start, completion and key events in between<sup>pg 393</sup>. Consider adding effective and expiration dates to the accumulating snapshot<sup>pg 394</sup> where new rows are added that preserves the state of a row for a span of time<sup>pg 394</sup>.
         - A single row represents the complete history of a workflow or pipeline instance<sup>pg 326</sup>.
         - Facts often include metrics corresponding to each milestone, plus status counts and elapsed duration<sup>pg 326</sup>.
         - Each row is revisited and updated whenever the pipeline instance changes; both foreign keys and measured facts may be changed during the fact row updates<sup>pg 326</sup>. They do not preserve counts and statuses at critical points, hence analysts might also want to retain snapshots at several important cut-off dates<sup>pg 329</sup>.
         - The row represents the accumulated history of the line item from the moment of creation to the current state<sup>pg 343</sup>.
     - Transactions and snapshots are the yin and yang of dimensional designs<sup>pg 122</sup>. Each provide different vantage points on the same story.
-    - After the base processes have been built, it may be useful to design complementary schemas, such as summary aggregations, accumulating snapshots that look across a workflow of processes, consolidated fact tables that combine facts from multiple processes to a common granularity, or subset fact tables that provide access to a limited subset of fact data for security or data distribution purposes<sup>pg 300</sup>.
+    - After the base processes have been built, it may be useful to design complementary schemas, such as summary aggregations, accumulating snapshots that look across a workflow of processes, consolidated fact tables that combine facts from multiple processes to a common granularity, or subset fact tables that provide access to a limited subset of fact data for security or data distribution purposes<sup>pg 300</sup>. You can almost never add enough facts to a snapshot schema to do away with the need for a transaction schema, and vice versa<sup>pg 387</sup>.
 - Supertype and subtype schemas
     - A family of supertype and subtype fact tables are needed when a business has heterogeneous products that have naturally different facts and descriptors, but a single customer base that demands an integrated view<sup>pg 295</sup>.
     - Business users typically require two different perspectives that are difficult to represent in a single fact table<sup>pg 293</sup>. These are common where an organisation sells heterogenous products/services where some products have common dimensions, there may be special attributes not shared by other products (such as financial services).
@@ -166,7 +168,7 @@
     - Separate heirarchies can gracefully coexist in the same dimension table<sup>pg 48</sup>. Hierarchical data should be presented in a single, flattened denormalized table<sup>pg 172</sup>.
     - Millions of rows in a dimension table is considered large<sup>pg 176</sup>.
     - 25 dimensions in a single dimensional model is considered large, and model should consider combining dimensions<sup>pg 176</sup>. Most dimensional models end up with between 5 and 20 dimensions<sup>pg 284</sup>.
-    - You certainly do not want to have as many rows in a fact table as you do in a related dimension table<sup>pg 264</sup>.
+    - You certainly do not want to have as many rows in a fact table as you do in a related dimension table<sup>pg 264</sup>. You should avoid creating dimensions with the same number of rows as the fact table<sup>pg 392</sup>.
     - If the cardinality of a dimension table is less than the number of transactions in the fact table, attribute values should be captured in a separate dimension table. If there is a unique attribute value for every event, it is treated as a transaction-grained dimension attribute<sup>pg 264</sup>.
 - Degenerate dimensions
     - Some fact tables have dimension keys for dimension tables that bear no context, i.e. invoice number. It is acknowledged there is no associated dimension table with this key<sup>pg 47</sup>.
@@ -275,8 +277,10 @@
         - Make each flag and indicator into its own dimension, but should be avoided if the number of foreign keys is already more than 20 <sup>pg 179</sup>.
         - Store flags and indicators in a transaction header dimension, using transaction number as a regular dimension. Should be avoided because this dimension will be very large, and there should be orders of magnitude difference between size of fact table and associated dimensions<sup>pg 181</sup>.
     - Typically referred to as _transaction indicator_ or _transaction profile dimension_<sup>pg 180</sup>.
-    - Grouping of low-cardinality flags and indicators<sup>pg 180</sup>.
+    - Grouping of low-cardinality flags and indicators<sup>pg 180</sup>. For example, one row per unique combination of profile attributes<sup>pg 392</sup>.
     - Consideration needs to be given to whether junk dimension rows created for the full Cartesian product of all combinations beforehand or create junk dimension rows as they are encountered in data<sup>pg 180</sup>.
+- Audit dimensions
+    - Each audit dimension row describes the data lineage of the fact row, including the time of the extract, source table, and extract software version<sup>pg 383</sup>.
 - Dimension attribute hierarchies
     - Fixed depth hierarchies:
         - Fixed set of labels, all with meaningful labels. Such as calendar hierarchies. Think of the levels as roll-ups. Can be represeted in a single dimension table<sup>pg 214</sup>.
@@ -307,6 +311,7 @@
 - Aggregated facts as dimension attributes
     - You can store an aggregated fact as a dimension. These attributes are meant to be used for constraining and labeling; they are not to be used in numeric calculations<sup>pg 239</sup>.
     - The main burden falls on the back room ETL processes to ensure the attributes are accurate, up-to-date and consistent with the actual fact row<sup>pg 239</sup>.
+    - Continuously valued numeric quantities are treated as facts. In the dimension table, you could store a more descriptive value range for grouping and filtering<sup>pg 382</sup>.
 - Step dimension
     - An abstract dimension defined in advance<sup>pg 251</sup>.
     - Useful to constrain on specific steps in a online checkout journey<sup>pg 252</sup>.
@@ -424,6 +429,7 @@
         - Avoid performing calculation in BI application because users may access data using different tools<sup>pg 78</sup>.
         - However non-additive metrics need to be calculated in BI application, because calculation cannot be pre-calculated across every dimension slice<sup>pg 78</sup>.
     - Data involved in calculations should be in fact tables and data involved in constraints, groups and labels should be in dimension tables<sup>pg 86</sup>
+
 ### Enterprise Data Warehouse Bus Architecture<sup>pg 123</sup>
 
 - For long-term DW/BI success, you need to use an architected, incremental approach to build the enterprise's warehouse.
@@ -440,3 +446,16 @@
 - Data governance objectives<sup>pg 137</sup>:
     - Reach agreement on data definitions, labels and domain values so that everyone is speaking the same language.
     - Establishes policies and responsibilities for data quality and accuracy, as well as data security and access controls.
+
+### Common Dimensional Modeling Mistakes to Avoid<sup>pg 397</sup>
+
+- Place text attributes in a fact table. The process of creating a dimensional model is always a kind of triage. The numeric measurements delivered from an operational business process source belong in the fact tablel; the descriptive textual attributes comprising the context of the measurements go in dimension tables<sup>pg 397</sup>.
+- Limit verbose descriptors to save space. Dimension tables are geometrically smaller than fact tables - our job as designers of easy-to-use dimensional models is to supply as much verbose descriptive context in each dimension as possible<sup>pg 398</sup>.
+- Split hierarchies into multiple dimensions. Your job is to present the hierarchies in the most natural and efficient manner in the eyes of the users, not in the eyes of the data modeler. Resist the urge to snowflake a hierarchy<sup>pg 398</sup>.
+- Ignore the need to track dimension changes. Three basic techniques track slowly moving attribute changes, do not rely on Type 1 exclusively. Business users often want to understand the impact of changes on a subset of the dimension table's attributes<sup>pg 398</sup>.
+- Solve all performance problems with more hardware. Building aggregates, partitioning, creating indices, choosing query-efficient DBMS software, increasing memory size, increasing CPU speed, adding parallelism can be achieved first<sup>pg 399</sup>.
+- Use operational keys to join dimensions and facts. Do not declare the dimension key to be the operational key. Dimension keys should be replaced with simple integer surrogate keys sequentially numbered from 1 to _N_ where _N_ is the total number of rows in the dimension table<sup>pg 399</sup>.
+- Neglect to declare and comply with the fact grain. All dimensional designs should begin by declaring the business process that generates the numeric performance measurements, followed by the exact granularity of the data (building fact tables at the most atomic, granular level will gracefully resist the ad hoc attack), followed by surrounding those measurements with dimensions that are true to the grain. Each different measurement grain demands its own fact table<sup>pg 399</sup>.
+- Use a report to design the dimensional model. A dimensional model has nothing to do with an intended report. Rather, it is a model of a measurement process. Numeric measurements form the basis of fact tables; the dimensions appropriate for a given fact table are the context that describes the circumstances of the measurements. A dimensional model is independent of how a user chooses to define a report<sup>pg 400</sup>.
+- Expect users to query normalised atomic data. Normalized models may be helpful for preparing data in the ETL kitchen, but they should never be used for presenting the data to business users<sup>pg 400</sup>.
+- Fail to conform facts and dimensions. The single most important design technique in the dimensional modeling arsenal is conforming dimensions. When you conform dimensions across fact tables, you can drill across separate data sources because the constraints and row headers mean the same thing and match at the data level<sup>pg 401</sup>.
