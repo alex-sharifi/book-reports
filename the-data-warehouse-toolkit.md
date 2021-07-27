@@ -47,7 +47,7 @@
 
 - Fact table structure
     - Contains numeric measures produced by an operational measurement event in the real world<sup>pg 41</sup>.
-    - Based on a _physical activity_ and is not influenced by the eventual reports that may be produced<sup>pg 41</sup>.
+    - Based on a _physical activity_ and is not influenced by the eventual reports that may be produced<sup>pg 41</sup>. A dimensional model is based solidly on the physics of a measurement process and is independent of how a user chooses to define a report<sup>pg 400</sup>.
     - Atomic data should be the foundation for every fact table design to withstand business users' ad hoc attacks.
     - _Continuously valued_ numeric observations are almost always facts.
     - If the numeric attributes are summarized rather than simply constrained upon, they belong in a fact table<sup>pg 265</sup>.
