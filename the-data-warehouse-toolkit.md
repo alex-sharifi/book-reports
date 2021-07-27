@@ -54,7 +54,7 @@
     - Fact tables are typically limited to foreign keys, degenerate dimensions and numeric facts<sup>pg 278</sup>.
     - You should prohibit text fields, including cryptic indicators and flags, from the fact table<sup>pg 301</sup>. Textual comments should not be stored in a fact table directly because they waste space and rarely participate in queries<sup>pg 350</sup>. If textual characteristics are used for query filtering or report labeling, then they belong in a dimension<sup>pg 383</sup>.
     - The fact table's granularity determines what constitutes a fact table row. In other words, what is the measurement event being recorded?<sup>pg 342</sup>.
-    - There are trade-offs between creating separate fact table for each natural cluster of transaction types versus lumping the transactions into a single fact table<sup>pg 378</sup>. See page 144 for more details.
+    - There are trade-offs between creating separate fact table for each natural cluster of transaction types versus lumping the transactions into a single fact table<sup>pg 378</sup>.
     - The natural conflict between the detailed transaction view and the snapshot perspective almost always requires building both kinds of fact tables un the warehouse<sup>pg 378</sup>.
 - There are just three fundamental types of fact tables; transaction, periodic snapshot and accumulating snapshot<sup>pg 119</sup>. All three serve a useful purpose, and often need two to complement each other. Whenever a source business process is considered for inclusion in the DW/BI system, there are three essential grain choices<sup>pg 342</sup>.
     - Transaction fact tables are the most fundamental view of operations, at the individual transaction line level<sup>pg 120</sup>. A row exists in the fact table only if a transaction event occurred. Naturally most atomic and enables analysis at extreme detail. However you cannot survive on transactions alone.
@@ -121,6 +121,16 @@
     - Multiple dates in fact tables allow users to filter, group and trend on any of the dates provided<sup>pg 188</sup>.
     - Just because a fact table has several dates does not mean that it is an accumulating snapshot. The primary differentiator of an accumulating snapshot is that fact rows are revisited as activity occurs.
     - In general, "to-date" totals should be calculated in BI software, not stored in the fact table<sup>pg 206</sup>.
+- Single versus multiple transaction fact tables
+    - A common design quandry that surfaces in many transactional situations, is should you build a blended transaction fact table with a transaction type dimension to view all procurement transactions together, or do you build separate fact tables for each transaction type? There is no simple formula to make the definite determination of whether to use a single fact table or multiple fact tables<sup>pg 144</sup>.
+    - When faced with a design decision, the following considerations help sort out the options:
+        - What are the users' analytic requirements? And which approach most naturally aligns with their business-centric perspective?<sup>pg 144</sup>
+        - Are there really multiple unique business processes?<sup>pg 144</sup>
+        - Are multiple source systems capturing metrics with unique granularities? Separate source systems suggests separate fact tables<sup>pg 144</sup>.
+        - What is the dimensionality of the facts? If dimensions are applicable to some transaction types but not to others, this would again lead you to separate fact tables<sup>pg 144</sup>.
+    - A simple way to consider these trade-offs is to draft a bus matrix, including two additional columns identifying the atomic granularity and metrics for each row (i.e. business process)<sup>pg 145</sup>
+    - Multiple fact tables enable richer, more descriptive dimensions and attributes. The single fact table approach would have required generalized labelling for some dimensions. This generalization reduces the legibility of the resulting dimensional model<sup>pg 145</sup>.
+    - Multiple fact tables may require more time to manage and adminster because there are more tables to load, index and aggregate. However loading the operational data from separate source systems into separate fact tables likely requires less complex ETL processing than attempting to integrate data from the multiple sources into a single fact table<sup>pg 145</sup>.
 - Transaction facts at different granularity
     - Common in header/line operational data to encounter facts of different granularity. For example, shipping charges on an order line fact table<sup>pg 185</sup> or multiple allowances applied to a single invoice line<sup>pg 190</sup>. First response should be to try to force all facts down to lowest level, broadly referred to as _allocating_<sup>pg 184</sup>.
     - Do not mix fact granularities. Either allocate the higher-level facts to a more detailed level, or create two separate fact tables to handle the differently grained facts<sup>pg 185</sup>.
