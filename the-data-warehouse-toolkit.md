@@ -1,7 +1,7 @@
 # The Data Warehouse Toolkit
 ###### Ralph Kimball, Margy Ross
 
-## Overview
+## DW/BI Overview
 
 ### Different Worlds of Data Capture and Data Analysis
 
@@ -28,9 +28,9 @@
 - Normalization in the dimensional model negatively impacts the model's twin objective of *understandability* and *performance*<sup>pg 301</sup>.
 - Plan to reevaluate models every 12 to 24 months<sup>pg 306</sup>.
 
-### Fact Tables for Measurements
+## Fact and Dimension Table Overview
 
-#### Fact Table Overview
+### Fact Tables for Measurements
 
 - Stores the performance measurements resulting from an organisations business process events.
 - Each row in a fact table corresponds to the most atomic measurement event<sup>pg 10</sup>.
@@ -43,7 +43,29 @@
 - When all the keys in the fact table correctly match their respective primary keys in the corresponding dimension tables, the tables satisfy _referential integrity_.
 - Fact table _primary keys_ are composed of a subset of the foreign keys, called a _composite key_
 
-#### Fact Table Techniques
+### Dimension Tables for Descriptive Context
+
+- Provide the "who, what, where, when, why and how: context surrounding a business process event<sup>pg 40</sup>.
+- Contain the entry points and descriptive labels that enable the DW/BI system to be leveraged for analysis<sup>pg 40</sup>.
+- Often have many columns (sometimes 50 to 100).
+- The dimension tables _primary key_ (surrogate key) which serves as basis for referential integrity with any given fact table to which it is joined.
+- _Discrete_ numeric observations drawn from a small list are almost always dimension attributes.
+- Dimension tables often represent heirarchical relationships - heirarchical descriptive information is stored redundantly in the spirit of ease of use and query performance.
+    - Resist the urge to normalise data. This normalisation is called _snowflaking_<sup>pg 15</sup>.
+    - Although snowflake represents heirarchical data accurately, you should avoid snowflakes because it is difficult for business users to understand and navigate<sup>pg 50</sup>.
+    - A flattened denormalised dimension table contains exactly the same information as a snowflaked dimension<sup>pg 50</sup>.
+    - Normalising values into separate tables defeats the primary goals of **simplicity and performance**<sup>pg 84</sup>.
+    - Dimensional model consciously breaks traditional data modelling rules to focus on simplicity and performance, not on transaction processing efficiencies<sup>pg 104</sup>.
+- Document the attribute definitions, interpretations and origins in the metadata (metadata is analogous to the DW/BI encyclopedia). Be vigilant about populating<sup>pg 173</sup>.
+- The customer dimension is typically the most challenging dimension for any DW/BI system:
+    - Extremely deep (many millions of rows), extremely wide (hundreds of attributes), subject to rapid change, and often represents an amalgamation of data from multiple internal and external source systems<sup>pg 233</sup>.
+    - The data warehouse is the foundation that supports the panoramic 360-degree view of your customers<sup>pg 232</sup>.
+    - You can build a single customer dimension that us the "best of breed" choice among a number of available customer data sources, and is likely a distillation of data from several operational systems within the organisation<sup>pg 256</sup>. The attributes in the customer dimension should represent the "best" source available in the enterprise<sup>pg 257</sup>.
+    - Effective consolidation of customer data depends on a balance of capturing the data as accurately as possible in the source systems, coupled with powerful data cleaning/merging tools in the ETL process<sup>pg 258</sup>.
+
+## Fact and Dimension Table Techniques
+
+### Fact Table Techniques
 
 - Fact table structure
     - Contains numeric measures produced by an operational measurement event in the real world<sup>pg 41</sup>.
@@ -146,29 +168,7 @@
     - If business users are frequently combining data from multiple business processes, a final approach is to define an additional fact table that combines the data once into a consolidated fact table rather than relying on users to consistently and accurately combine the data on their own<sup>pg 260</sup>.
    - Avoid fact-to-fact table joins. Be very careful when simultaneously joining a single dimension table to two fact tables of different cardinality. In many cases, relational engines return the "wrong" answer<sup>pg 260</sup>.
 
-### Dimension Tables for Descriptive Context
-
-#### Dimension Table Overview
-
-- Provide the "who, what, where, when, why and how: context surrounding a business process event<sup>pg 40</sup>.
-- Contain the entry points and descriptive labels that enable the DW/BI system to be leveraged for analysis<sup>pg 40</sup>.
-- Often have many columns (sometimes 50 to 100).
-- The dimension tables _primary key_ (surrogate key) which serves as basis for referential integrity with any given fact table to which it is joined.
-- _Discrete_ numeric observations drawn from a small list are almost always dimension attributes.
-- Dimension tables often represent heirarchical relationships - heirarchical descriptive information is stored redundantly in the spirit of ease of use and query performance.
-    - Resist the urge to normalise data. This normalisation is called _snowflaking_<sup>pg 15</sup>.
-    - Although snowflake represents heirarchical data accurately, you should avoid snowflakes because it is difficult for business users to understand and navigate<sup>pg 50</sup>.
-    - A flattened denormalised dimension table contains exactly the same information as a snowflaked dimension<sup>pg 50</sup>.
-    - Normalising values into separate tables defeats the primary goals of **simplicity and performance**<sup>pg 84</sup>.
-    - Dimensional model consciously breaks traditional data modelling rules to focus on simplicity and performance, not on transaction processing efficiencies<sup>pg 104</sup>.
-- Document the attribute definitions, interpretations and origins in the metadata (metadata is analogous to the DW/BI encyclopedia). Be vigilant about populating<sup>pg 173</sup>.
-- The customer dimension is typically the most challenging dimension for any DW/BI system:
-    - Extremely deep (many millions of rows), extremely wide (hundreds of attributes), subject to rapid change, and often represents an amalgamation of data from multiple internal and external source systems<sup>pg 233</sup>.
-    - The data warehouse is the foundation that supports the panoramic 360-degree view of your customers<sup>pg 232</sup>.
-    - You can build a single customer dimension that us the "best of breed" choice among a number of available customer data sources, and is likely a distillation of data from several operational systems within the organisation<sup>pg 256</sup>. The attributes in the customer dimension should represent the "best" source available in the enterprise<sup>pg 257</sup>.
-    - Effective consolidation of customer data depends on a balance of capturing the data as accurately as possible in the source systems, coupled with powerful data cleaning/merging tools in the ETL process<sup>pg 258</sup>.
-
-#### Dimension Table Techniques
+### Dimension Table Techniques
 
 - Dimension table structure
     - Every dimension table has a single primary key column, which is also embedded in any associated fact tables<sup>pg 46</sup>.
@@ -336,7 +336,7 @@
         - Concatenate the names into a single, delimited attribute. Enables easy report labelling but would not support analysis of events by specific dimension characteristics.
     - Weighting factors in multi-valued bridge tables provide an elegant way to prorate numeric facts to produce correctly weighted reports. However, these weighting factors are by no means required in a dimensional design. If there is no agreement or enthusiasm within the business community for the weighting factors they should be left out. Also, in a schema with more than one multi-valued dimension, it is not worth trying to decide how multiple weighting factors would interact<sup>pg 346</sup>.
 
-### Kimball's DW/BI Architecture
+## Kimball's DW/BI Architecture
 
 - There are four separate and distinct components to consider in the DW/BI environment<sup>pg 18</sup>:
     - Operational source systems
@@ -357,10 +357,7 @@
         - Most finely-grained data, at the most exquisite details, must be available so that users can ask the most precise questions possible.
         - Single fact table for atomic sales metrics, rather than separate similar, but slightly different, databases containing metrics for sales, marketing, logistics, etc.
     - BI applications
-
-### Alternative DW/BI Architectures
-
-- Independent Data Mart
+- An alternative DW/BI architecure is the indepdent data mart:
     - Working in isolation, departmental data addresses departments's analytic requirements.
     - Other departments interested in same source data progresses down same path but ends up with different data and definitions.
     - Numbers rarely match.
@@ -382,16 +379,13 @@
     - Focus on the organisation's measurement events that are typically stable, unlike analyses that are constantly evolving<sup>pg 31</sup>.
     - The correct starting point for your dimensional models is to express data at the lowest detail possible for maximum flexibility and extensibility<sup>pg 31</sup>.
 
-### More Reasons to Think Dimensionally
-
-- Do not focus on a set of required reports or dashboard gauges. Instead constantly ask about the business process measurement events producing that report or dashboard<sup>pg 32</sup>
-
 ---
 
 ## Kimball Modelling Techniques
 
 ### Gather Business Requirements and Data Realities
 
+- Do not focus on a set of required reports or dashboard gauges. Instead constantly ask about the business process measurement events producing that report or dashboard<sup>pg 32</sup>
 - Understand the source data and business requirements<sup>pg 38</sup>.
 - Dimensional models should be designed based on a blended understanding of the business's needs, along with the operational source system's data realities. While requirements are collected from the business users, the underlying source data should be profiled. Models driven solely by requirements inevitably include data elements that cannot be sourced. Meanwhile, models driven solely by source system data analysis inevitably omit data elements that are critical to the business's analytics<sup>pg 300</sup>.
 - Objectives based on KPIs, decision making processes and analytic needs<sup>pg 38</sup>.
@@ -456,6 +450,63 @@
 - Data governance objectives<sup>pg 137</sup>:
     - Reach agreement on data definitions, labels and domain values so that everyone is speaking the same language.
     - Establishes policies and responsibilities for data quality and accuracy, as well as data security and access controls.
+
+### Kimball DW/BI Lifecycle
+
+#### Project Planning
+
+- Assessing Readiness
+    - Is there a strong executive business sponsor with a clear vision for the DW/BI system's potential impact?<sup>pg 406</sup>
+    - Is there strong compelling business motivation? i.e. competition
+    - Are real data in real operational source systems being collected to support the business reqirements<sup>pg 407</sup>
+    - Is the scope known?
+    - What is the justification for a DW/BI project? "Delivering a single version of the truth" is not a sufficient financial justification. What are the increased profit opportunities?<sup>pg 407</sup>
+    - Staffing (roles, not not people - it is common for the same person to fill multiple roles on the team). See full list on pg 408.
+- Business Requirements Definitions
+    - Requirements preplanning: requirements sessions are usually interwoven with source system expert data discover sessions. Interview business representatives about what they do, why they do it, how they make decisions and how they hope to make decisions in the future<sup>pg 410</sup>. Talk to business people representing a reasonable horizontal spectrum of the organisation. Do some homework and do not presume you know it all. Identify lead inteviewer who asks great open-ended questions and scribe to take copious notes<sup>pg 411</sup>. Ask interviewees to bring copies of important reports and analyses to the session<sup>pg 412</sup>.
+    - Collecting business requirements: the objective of an interview is to get business users to talk about what they do and why they do it<sup>pg 412</sup>. Ask analytical staff about the types of analysis currently generated. Ask executives about better leveraging information throughout the organization<sup>pg 413</sup>. Ask each interviewee to articulate specific success critera for the project<sup>pg 413</sup>.
+    - Conducting data-centric interviews: intersperse interviews with sessions with source system data gurus or subject matter experts to evaluate the feasibility of supporting the business needs<sup>pg 413</sup>. Do some initial data profiling to ensure you are not standing on quicksand (a more complete data audit will occur during the dimensional modeling process)<sup>pg 414</sup>.
+    - Documenting requirements: interview team should debrief and review notes shortly after interview, consolidating everything in a findings document, organised around key business processes<sup>pg 414</sup>.
+    - Prioritising requirements: prioritise business processes to tackle using a prioritisation grid (feasibility on x-axis, potential business impact on y-axis)<sup>pg 415</sup>.
+
+#### Lifecycle Technology Track
+
+- Like a blueprint for a home, technical architecture consists of a series of models that unveil greater detail regarding each major component, and allows you to catch problems on paper. Identifies immediately required components versus those that will be incorporated at a later date. A communication tool between all parties involved<sup>pg 416</sup>.
+- Establish an architecure task force: typically technical architect, ETL designer and BI application designer to ensure both back room and front room representation<sup>pg 417</sup>.
+- Collect and document architecture-related requirements, and create architecure model: list each business requirement impacting the architecture, along with a list of architectural implications<sup>pg 417</sup>. Architecture requirements are grouped into major components such as ETL, BI, metadata and infrastructure<sup>pg 418</sup>.
+- Design and specify the subsystems. Define in enough detail to evaluate whether subsystem can be bought or built<sup>pg 418<sup>.
+
+#### Lifecycle Data Track
+
+- Dimensional modelling
+- Physical design: dimensional models developed via preliminary source-target mapping need to be translated into a physical database<sup>pg 420</sup>
+    - Develop naming and database standards
+    - Develop physical database model, including staging tables to support ETL, and auditing tables for ETL processing and data quality.
+    - Develop initial index plan, applying indexes to dimension tables' single column primary key. 
+    - Design aggregations, considering business users' access patterns and statistical distributions of data.
+    - Finalise physical storage details, i.e. partition tables by date.
+- ETL design and development.
+
+#### Lifecycle BI Applications Track
+
+- While a data warehouse provides an ad-hoc self service query environment, delivering parameter-driven BI applications will satisfy a large percentage of the business communities needs<sup>pg 422</sup>.
+- BI application specification and development: identify a start set of approximately 10-15 BI reports and analyses, focus on standards (naming conventions, calculations, libraries and coding standards). Application development can begin when the database design is complete, BI tools and metadata are installed, and a subset of historical data have been loaded. BI developers will quickly find needling problems in the data haystack despite QA performed by ETL application<sup>pg 423</sup>.
+
+#### Lifecycle Wrap-up Activities
+
+- Deployment: Technology, data and BI tracks must converge. Preparing data in the ETL phase is the most unpredictable task<sup>pg 424</sup>.
+- Maintenance and growth: the DW/BI system needs to be treated as a production environment with service level agreements. You do not want to rely on the business community to tell you that performance/quality has degraded, so it should be proactively monitored<sup>pg 425</sup>.
+
+#### Lifecycle Pitfalls<sup>pg 426</sup>
+
+- Do not become overly enamored with technology rather than focusing on business requirements.
+- Fail to embrace an influential and accessible senior manager as a sponsor.
+- Do not tackle multi-year projects. Instead pursue iterative development efforts.
+- Do not neglect front room query performance by focussing too heavily on back room operational performance.
+- Do not populate models without regard to a data architecture.
+- Do not load only summaryd data into the dimensional models.
+- Do not presume business requirements are static.
+- Do not forget that DW/BI success is tied directly to business acceptance and improved decision making.
 
 ### Common Dimensional Modeling Mistakes to Avoid<sup>pg 397</sup>
 
