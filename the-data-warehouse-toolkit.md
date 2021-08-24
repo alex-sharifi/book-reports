@@ -468,6 +468,7 @@
     - Conducting data-centric interviews: intersperse interviews with sessions with source system data gurus or subject matter experts to evaluate the feasibility of supporting the business needs<sup>pg 413</sup>. Do some initial data profiling to ensure you are not standing on quicksand (a more complete data audit will occur during the dimensional modeling process)<sup>pg 414</sup>.
     - Documenting requirements: interview team should debrief and review notes shortly after interview, consolidating everything in a findings document, organised around key business processes<sup>pg 414</sup>.
     - Prioritising requirements: prioritise business processes to tackle using a prioritisation grid (feasibility on x-axis, potential business impact on y-axis)<sup>pg 415</sup>.
+    - This step usuall determines the first step of the Dimensional Design Process - _identify the business process_<sup>pg 434</sup>.
 
 #### Lifecycle Technology Track
 
@@ -485,7 +486,8 @@
     - Develop initial index plan, applying indexes to dimension tables' single column primary key. 
     - Design aggregations, considering business users' access patterns and statistical distributions of data.
     - Finalise physical storage details, i.e. partition tables by date.
-- ETL design and development.
+- ETL design and development
+    - Resist temptations to defer complexities to the BI applications in an effort to streamline the ETL processing. Remember the goal is to trade off ETL processing complexity for simplicity and predictability at the BI presentation layer<sup>pg 431</sup>.
 
 #### Lifecycle BI Applications Track
 
@@ -497,16 +499,39 @@
 - Deployment: Technology, data and BI tracks must converge. Preparing data in the ETL phase is the most unpredictable task<sup>pg 424</sup>.
 - Maintenance and growth: the DW/BI system needs to be treated as a production environment with service level agreements. You do not want to rely on the business community to tell you that performance/quality has degraded, so it should be proactively monitored<sup>pg 425</sup>.
 
-#### Lifecycle Pitfalls<sup>pg 426</sup>
+### Dimensional Modeling Process and Tasks
 
-- Do not become overly enamored with technology rather than focusing on business requirements.
-- Fail to embrace an influential and accessible senior manager as a sponsor.
-- Do not tackle multi-year projects. Instead pursue iterative development efforts.
-- Do not neglect front room query performance by focussing too heavily on back room operational performance.
-- Do not populate models without regard to a data architecture.
-- Do not load only summaryd data into the dimensional models.
-- Do not presume business requirements are static.
-- Do not forget that DW/BI success is tied directly to business acceptance and improved decision making.
+- The primary goals are to create a model that meets the business requirements, verify that data is available to populate the model, and provide the ETL team with a solid starting source-to-target mapping<sup>pg 430</sup>.
+- Dimensional models unfold through a series of design sessions, with each pass resulting in a more detailed and robust design. A typical design requires _three to four weeks_ for a single business process dimensional model<sup>pg 430</sup>.
+- {image of dimensional modeling process flow diagram}
+
+#### Get Organised
+
+- Identify participants, especially business representatives: data modelers facilitiate the process, but subject matter experts should be actively involved because they are often the individuals who have historically figured out how to get out of source systems and turned into valuable analytic information<sup>pg 431</sup>.
+- Initiate a data governance and stewardship program (if not already exists)<sup>pg 431</sup>. It is difficult to get people in different corners of the business to agree on common attribute names, definitions and values, but that is the crux of unified, integrated data<sup>pg 432</sup>.
+- Review business requirements from Project Planning phase and translate into dimensional model. Some designers are tempted to skip the requirements review and move directly into the design, but the resulting models are typically driven exclusively by the souce data without considering added value required by the business community<sup>pg 432</sup>.
+- Document dimensional model using a spread sheet to help the DBA forward engineer the model into the database<sup>pg 433</sup>.
+- Data profiling: the modeling team needs an ever-increasing understanding of the source data's structure, content and relationships. _Data profiling_ uses query capabilities to explore the actual content and relationships of the source system rather than relying on incomplete or outdated documentation<sup>pg 433</sup>. 
+- Establish naming conventions (if not already established.) Part of the process of designing a dimensional model is agreeing on common definitions and labels<sup>pg 433</sup>.
+- Coordinate calendars. Schedule design sessions for 2-3 hours for 3-4 days each week. The design team can use unschedule time to research the source data and confirm requirements<sup>pg 434</sup>.
+
+#### Design the Dimensional Model
+
+- The primary goals are to create a model that meets the business requirements, verify the data is available to populate the model, and provide the ETL team with a clear direction<sup>pg 441</sup>.
+- Reach consensus. The initial task in the design session is to create a high-level dimensional model diagram for the target business process, often using a bubble chart. This entity-level graphical model clearly identifies the grain of the fact table and its associated dimensions to a non-technical audience<sup>pg 435</sup>. The bubble chart must be rooted in the realities of available physical data sources<sup>pg 436</sup>. See sample model diagram [here](http://www.kimballgroup.com/wp-content/uploads/2014/03/Ch07-High-Level-Model-diagram.ppt).
+![Bubble chart diagram](/book-reports/dwtk-ch18-bubblechart.png)
+- Develop the detailed dimensional model:
+    - Identify dimensions and their attributes: start with dimension tables; conformed dimensions are defined and agreed across business users<sup>pg 437<sup>.
+    - Identify the facts: declaring the grain crystallises the discussion about the fact table's measurements<sup>pg 437</sup>.
+    - Identify slowy changing dimension techniques: for each dimension table attribute, define how source system data changes will be reflected in the dimension table<sup>pg 437</sup>.
+    - Document the detailed table designs: the main deliverable of detailed dimensional models are the design worksheets, capturing detail for communication between business users, BI application developers and ETL developers tasked with populating the design<sup>pg 437</sup>. Each dimension and fact table should be documented in a separate worksheet, or at least attribute/fact names, descriptions, example values and SCD type for every dimension attribute<sup>pg 438</sup>. Worksheets downloaded from [here](http://www.kimballgroup.com/wp-content/uploads/2014/03/Ch08-Physical-Model-Template.xls).
+    - Track issues, definitions, transformation rules and data quality challenges discovered during design process should be captured in an issue tracking log<sup>pg 439</sup>.
+    - Keep bus matrix updated as new discoveries lead to new fact tables or splitting/combining dimensions<sup>pg 439</sup>.
+    - Ongoing analysis of the source system and data profiling helps the team better understand the realities of the underlying source data<sup>pg 436</sup>.
+- Review and validate the model: conduct reviews with IT who are intimately familiar with the target business process, because they probably wrote or manage the system that runs it. Conduct education sessions with business users to illustrate how the dimensional model supports their business requirements<sup>pg 440</sup>.
+- Final design documentation should include: brief description of the project, high-level data model diagrams, detailed dimensional design worksheet for each fact and dimension table, open issues<sup>pg 441</sup>.
+
+
 
 ### Common Dimensional Modeling Mistakes to Avoid<sup>pg 397</sup>
 
@@ -520,3 +545,14 @@
 - Use a report to design the dimensional model. A dimensional model has nothing to do with an intended report. Rather, it is a model of a measurement process. Numeric measurements form the basis of fact tables; the dimensions appropriate for a given fact table are the context that describes the circumstances of the measurements. A dimensional model is independent of how a user chooses to define a report<sup>pg 400</sup>.
 - Expect users to query normalised atomic data. Normalized models may be helpful for preparing data in the ETL kitchen, but they should never be used for presenting the data to business users<sup>pg 400</sup>.
 - Fail to conform facts and dimensions. The single most important design technique in the dimensional modeling arsenal is conforming dimensions. When you conform dimensions across fact tables, you can drill across separate data sources because the constraints and row headers mean the same thing and match at the data level<sup>pg 401</sup>.
+
+#### Lifecycle Pitfalls<sup>pg 426</sup>
+
+- Do not become overly enamored with technology rather than focusing on business requirements.
+- Fail to embrace an influential and accessible senior manager as a sponsor.
+- Do not tackle multi-year projects. Instead pursue iterative development efforts.
+- Do not neglect front room query performance by focussing too heavily on back room operational performance.
+- Do not populate models without regard to a data architecture.
+- Do not load only summaryd data into the dimensional models.
+- Do not presume business requirements are static.
+- Do not forget that DW/BI success is tied directly to business acceptance and improved decision making.
