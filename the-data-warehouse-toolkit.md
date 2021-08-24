@@ -501,7 +501,8 @@
 
 ### Dimensional Modeling Process and Tasks
 
-- The primary goals are to create a model that meets the business requirements, verify that data is available to populate the model, and provide the ETL team with a solid starting source-to-target mapping<sup>pg 430</sup>.
+- The primary goals are to create a model that meets the business requirements, verify that data is available to populate the model, and provide the ETL team with a solid starting source-to-target mapping<sup>pg 430</sup> and a clear direction<sup>pg 441</sup>.
+
 - Dimensional models unfold through a series of design sessions, with each pass resulting in a more detailed and robust design. A typical design requires _three to four weeks_ for a single business process dimensional model<sup>pg 430</sup>.
 - {image of dimensional modeling process flow diagram}
 
@@ -517,7 +518,6 @@
 
 #### Design the Dimensional Model
 
-- The primary goals are to create a model that meets the business requirements, verify the data is available to populate the model, and provide the ETL team with a clear direction<sup>pg 441</sup>.
 - Reach consensus. The initial task in the design session is to create a high-level dimensional model diagram for the target business process, often using a bubble chart. This entity-level graphical model clearly identifies the grain of the fact table and its associated dimensions to a non-technical audience<sup>pg 435</sup>. The bubble chart must be rooted in the realities of available physical data sources<sup>pg 436</sup>. See sample model diagram [here](http://www.kimballgroup.com/wp-content/uploads/2014/03/Ch07-High-Level-Model-diagram.ppt).
 
 ![Bubble chart diagram](/images/dwtk-ch18-bubblechart.png)
