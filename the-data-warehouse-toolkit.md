@@ -519,6 +519,7 @@
 
 - The primary goals are to create a model that meets the business requirements, verify the data is available to populate the model, and provide the ETL team with a clear direction<sup>pg 441</sup>.
 - Reach consensus. The initial task in the design session is to create a high-level dimensional model diagram for the target business process, often using a bubble chart. This entity-level graphical model clearly identifies the grain of the fact table and its associated dimensions to a non-technical audience<sup>pg 435</sup>. The bubble chart must be rooted in the realities of available physical data sources<sup>pg 436</sup>. See sample model diagram [here](http://www.kimballgroup.com/wp-content/uploads/2014/03/Ch07-High-Level-Model-diagram.ppt).
+
 ![Bubble chart diagram](/images/dwtk-ch18-bubblechart.png)
 - Develop the detailed dimensional model:
     - Identify dimensions and their attributes: start with dimension tables; conformed dimensions are defined and agreed across business users<sup>pg 437<sup>.
