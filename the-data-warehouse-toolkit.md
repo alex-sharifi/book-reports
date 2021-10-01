@@ -45,8 +45,9 @@
 
 ### Dimension Tables for Descriptive Context
 
-- Provide the "who, what, where, when, why and how: context surrounding a business process event<sup>pg 40</sup>.
-- Contain the entry points and descriptive labels that enable the DW/BI system to be leveraged for analysis<sup>pg 40</sup>.
+- Provide the "who, what, where, when, why and how: context surrounding a business process event.<sup>pg 40</sup>
+- Dimension tables are the heart of the data warehouse. They provide the context for the fact tables and hence for all measurements.<sup>pg 463</sup> They are the context for the measured activity (fact records).<sup>pg 478</sup>
+- Contain the entry points and descriptive labels that enable the DW/BI system to be leveraged for analysis.<sup>pg 40</sup>
 - Often have many columns (sometimes 50 to 100).
 - The dimension tables _primary key_ (surrogate key) which serves as basis for referential integrity with any given fact table to which it is joined.
 - _Discrete_ numeric observations drawn from a small list are almost always dimension attributes.
@@ -69,10 +70,11 @@
 
 - Fact table structure
     - Contains numeric measures produced by an operational measurement event in the real world<sup>pg 41</sup>.
-    - Based on a _physical activity_ and is not influenced by the eventual reports that may be produced<sup>pg 41</sup>. A dimensional model is based solidly on the physics of a measurement process and is independent of how a user chooses to define a report<sup>pg 400</sup>.
+    - Based on a _physical activity_ and is not influenced by the eventual reports that may be produced<sup>pg 41</sup>. A dimensional model is based solidly on the physics of a measurement process and is independent of how a user chooses to define a report.<sup>pg 400</sup>
+    - Fact records are 'measured activity'.<sup>pg 478</sup>
     - Atomic data should be the foundation for every fact table design to withstand business users' ad hoc attacks.
     - _Continuously valued_ numeric observations are almost always facts.
-    - If the numeric attributes are summarized rather than simply constrained upon, they belong in a fact table<sup>pg 265</sup>.
+    - If the numeric attributes are summarized rather than simply constrained upon, they belong in a fact table.<sup>pg 265</sup>
     - Fact tables are typically limited to foreign keys, degenerate dimensions and numeric facts<sup>pg 278</sup>.
     - You should prohibit text fields, including cryptic indicators and flags, from the fact table<sup>pg 301</sup>. Textual comments should not be stored in a fact table directly because they waste space and rarely participate in queries<sup>pg 350</sup>. If textual characteristics are used for query filtering or report labeling, then they belong in a dimension<sup>pg 383</sup>.
     - The fact table's granularity determines what constitutes a fact table row. In other words, what is the measurement event being recorded?<sup>pg 342</sup>.
@@ -180,6 +182,7 @@
     - 25 dimensions in a single dimensional model is considered large, and model should consider combining dimensions<sup>pg 176</sup>. Most dimensional models end up with between 5 and 20 dimensions<sup>pg 284</sup>.
     - You certainly do not want to have as many rows in a fact table as you do in a related dimension table<sup>pg 264</sup>. You should avoid creating dimensions with the same number of rows as the fact table<sup>pg 392</sup>.
     - If the cardinality of a dimension table is less than the number of transactions in the fact table, attribute values should be captured in a separate dimension table. If there is a unique attribute value for every event, it is treated as a transaction-grained dimension attribute<sup>pg 264</sup>.
+    - Flatten many-to-one hierarchies: i.e. SKUs roll up to brands, brands roll up to categories, categories roll up to departments. Each of these is a many-to-one relationship. Dimension tables can contain more than one explicit hierarchy.<sup>pg 85</sup>
 - Degenerate dimensions
     - Some fact tables have dimension keys for dimension tables that bear no context, i.e. invoice number. It is acknowledged there is no associated dimension table with this key<sup>pg 47</sup>.
     - These can be useful for grouping purposes (i.e. grouping across basket transactions), and also linking back to operational system<sup>pg 93,178</sup>.
@@ -319,7 +322,8 @@
     - For example, can be used to look at customers' time series data such as RFV (Recency, Frequency, Value) quintile cube development over time<sup>pg 241<sup>.
     - Unbounded text comments should either be stored in a separate comments dimension or treated as attributes in a transaction event dimension<sup>pg 350</sup>.
 - Aggregated facts as dimension attributes
-    - You can store an aggregated fact as a dimension. These attributes are meant to be used for constraining and labeling; they are not to be used in numeric calculations<sup>pg 239</sup>.
+    - You can store an aggregated fact as a dimension. These attributes are meant to be used for constraining and labeling; they are not to be used in numeric calculations.<sup>pg 239</sup> 
+    - It is possible to store a fact as a dimension value. [Link](https://www.kimballgroup.com/2007/12/design-tip-97-modeling-data-as-both-a-fact-and-dimension-attribute/)
     - The main burden falls on the back room ETL processes to ensure the attributes are accurate, up-to-date and consistent with the actual fact row<sup>pg 239</sup>.
     - Continuously valued numeric quantities are treated as facts. In the dimension table, you could store a more descriptive value range for grouping and filtering<sup>pg 382</sup>.
 - Step dimension
@@ -487,7 +491,20 @@
     - Design aggregations, considering business users' access patterns and statistical distributions of data.
     - Finalise physical storage details, i.e. partition tables by date.
 - ETL design and development
-    - Resist temptations to defer complexities to the BI applications in an effort to streamline the ETL processing. Remember the goal is to trade off ETL processing complexity for simplicity and predictability at the BI presentation layer<sup>pg 431</sup>.
+    - Resist temptations to defer complexities to the BI applications in an effort to streamline the ETL processing. Remember the goal is to trade off ETL processing complexity for simplicity and predictability at the BI presentation layer.<sup>pg 431</sup> The primary mission of the ETL system is the hand off of the dimension and fact tables in the [delivery step](#delivering-prepare-for-presentation).<sup>pg 463</sup> We believe it is irresponsible to hand off data to the BI application in such a way to increase the complexity of the application.<sup>pg 448</sup>
+    - ETL consumes a disproportionate share of the time and effort required to build a DW/BI environment due to the many outside constraints putting pressure on the design, such as source data realities, budget, processing windows, and skills of available staff<sup>pg 443</sup>.
+    - Round up the requirements:
+        - Business needs: maintain a list of the KPIs uncovered during the business requirements sessions<sup>pg 444</sup>.
+        - Compliance: list all data and final reports subject to compliance restrictions. List those data inputs and transformation steps for which you must maintain the "chain of custody"<sup>pg 445</sup>.
+        - Data quality: list all data elements whose quality is known to be unacceptable, and whether an agreement has been reached with the source systems to correct the data before extraction<sup>pg 445</sup>.
+        - Security: seek guidance from senior management as to what aspects of the DW/BI system carry extra security sensitivity. Likely to overlap with Compliance<sup>pg 446</sup>.
+        - Data integration: the "360 degree view of the enterprise" is a familiar name for data integration and usually takes the form of conforming dimensions and conforming facts in the data warehouse. Generate a priority list for conforming dimensions<sup>pg 446</sup>.
+        - Data latency: if the data latency requirements are sufficiently urgent, the ETL system's architecture must convert from batch to microbatch or streaming<sup>pg 447</sup>.
+        - Archiving and lineage: data should be staged (written to disk) after each major activity of the ETL pipeline - after it has been extracted, cleaned and conformed, and delivered. All staged data should be archived unless a conscious decision is made that specific data sets will never be recovered in the future<sup>pg 447</sup>. List the data sources, retention policies, and compliance, security and privacy constraints<sup>pg 448</sup>.
+        - BI delivery interfaces: the ETL team, working closely with the modeling team, must take responsibility for the content and structure of the data that makes the BI applications simple and fast. The ETL team and data modelers need to closely work with the BI application developers to determine the exact requirements for the data handoff<sup>pg 448</sup>.
+        - Available skills: inventory your department's operating system, ETL tool, scripting language, programming language, SQL, DBMS and OLAP skills<sup>pg 449</sup>.
+        - Legacy licenses: list your legacy all as above, and add whether their exclusive use is mandated or recommended<sup>pg 449</sup>.
+    - [See 34 subsystems of ETL here](#34-subsystems-of-etl)
 
 #### Lifecycle BI Applications Track
 
@@ -532,7 +549,100 @@
 - Review and validate the model: conduct reviews with IT who are intimately familiar with the target business process, because they probably wrote or manage the system that runs it. Conduct education sessions with business users to illustrate how the dimensional model supports their business requirements<sup>pg 440</sup>.
 - Final design documentation should include: brief description of the project, high-level data model diagrams, detailed dimensional design worksheet for each fact and dimension table, open issues<sup>pg 441</sup>.
 
+### 34 Subsystems of ETL
 
+- ETL is more than simply extract, transform and load; it is a host of complex and important tasks.<sup>pg 496</sup>. There are really 4 components:
+    - [Extracting](#extracting): gathering raw data from source systems and usually writing to disk in the ETL environment before any significant restructuring of the data takes place<sup>pg 450</sup>.
+    - [Cleaning and conforming](#cleaning-and-conforming): sending source data through a series of processing steps to improve the quality of the data received from the source<sup>pg 450</sup>.
+    - [Delivering](#delivering-prepare-for-presentation): physically structuring and loading the data into the presentation server's target dimensional models<sup>pg 450</sup>.
+    - [Managing](#managing-the-etl-environment): managing the related systems and processes of the ETL environment in a coherent manner<sup>pg 450</sup>.
+
+#### Extracting
+
+- Subsystem 1 - _Data Profiling_: technical analysis of data to describe its content, consistency and structure. The profiling step provides the ETL team with guidance as to how much data cleaning machinery to invoke and protects them from missing major project milestones due to unexpected diversion of building systems to deal with dirty data. Use the data profiling results to set the business sponsors' expectations in development schedules, source limitations and the need to invest in better data capture practises<sup>pg 451</sup>.
+- Subsystem 2 - _Change Data Capture System_: isolating the latest source data is called change data capture (CDC), and just transfer the data that has changed since the last load<sup>pg 451</sup>. You must carefully evaluate your stragegy for each data source<sup>pg 452</sup>.
+    - Audit columns: source systems sometimes include audit columns that store the date and time a record was added or modified, populated by database triggers that are fired automatically as records are inserted or updated<sup>pg 452</sup>.
+    - Timed extracts: select all rows where the create or modified date fields equal `SYSDATE-1`, meaning all of yesterday's records. However this is unreliable if the process fails for any reason<sup>pg 452</sup>.
+    - Full diff compare: keep a full snapshot of yesterday's data, and compare it record by record, against today's data to find what changed.Thorough but resource-intensive. Try to do comparison on source machine to avoid transferring entire table/database to the ETL environment<sup>pg 453</sup>.
+    - Database log scraping: scraping the log for transactions is probably the messiest of all techniques. Takes a snapshot of the database redo log at a scheduled point in time and scours it for transactions affecting the tables of interest in the ETL load<sup>pg 453</sup>.
+    - Message queue monitoring: monitor queue for all transactions against the tables of interest<sup>pg 453</sup>.
+- Subsystem 3 - _Extract System_: each source might be in a different system, environment and/or DBMS, presenting a variety of challenges. There are two primary methods for getting data from a source system: as a file (extract to the file, move the file to the ETL server, transform the file contents, and load into a staging database) or a stream (data flows out of the source system, through the transformation engine, and into the staging datatbase as a single process)<sup>pg 454</sup>.
+
+#### Cleaning and Conforming
+
+- These are the steps where the ETL system adds value to the data. Cleaning and conforming subsystems actually change the data and enhance its value to the organisation<sup>pg 455</sup>.
+
+- Subsystem 4 - _Data Cleansing System_: striking a balance between fixing dirty data and providing an accurate picture of the source as it was captured by production systems. Quality screens/tests are diagnostic filters in the data flow pipelines<sup>pg 457</sup>. Each quality screen has to decide what happens when an error is thrown (halt process, send to suspense file for later processing, tag as faulty and pass to next step in pipeline).
+    - Column screens test the data within a single column. Does a column contain null values? Does a value fall outside of a prescribed range? Does a value fail to adhere to a required format?<sup>pg 457</sup>
+    - Structure screens test foreign key/primary key relationships between tables.<sup>pg 457</sup>
+    - Business rule screens test aggregate threshold quality tests (i.e. is there a statistically improbable number of counts) and test business rule logic (i.e. are there any 'platinum' customers that do not meet attributes required for platinum status?)<sup>pg 457</sup>
+- Subsystem 5 - _Error Event Schema_: dimensional schema to record every error event thrown by a quality screen/tests anywhere in the ETL pipeline. Consists of a fact table with grain of every error thrown by a quality screen.<sup>pg 458</sup>
+- Subsystem 6 - _Audit Dimension Assembler_: the audit dimension contains the metadata context at the moment when a specific fact row is created. For fact rows being loaded that fail a quality screen/test, an audit dimension row flagging the condition would be attached to the fact row.<sup>pg 460</sup>
+- Subsystem 7 - _Deduplication System (Survivorship)_: Dimensions are often derived from several sources (i.e. customer information may need to be merged from several lines of business and outside sources.) Sometimes the data can be matched through identical values in some column, other times a fuzzy match is needed. However common columns in different sources may contradict one another, requiring a decision on which data should survive. Survivorship is the process of combining matched records into a unified image that combines the highest quality columns from the matched records. This requires a priorty sequence from all source systems into the best-survived attributes. If the dimensional design is fed from multiple systems, you must maintain natural keys to all participating sources used to construct the dimension row.<sup>pg 461</sup> 
+- Subsystem 8 - _Conforming System_: Conforming consists of all the steps required to align the content of some or all the columns in a dimension with columns in similar or identical dimensions in other parts of the data warehouse.<sup>pg 461</sup> Incoming data from multiple systems needs to be combined and integrated so it is structurally identical, deduplicated, filtered of invalid data, and standardised in terms of content rows in a conformed image.<sup>pg 463</sup>
+
+#### Delivering: Prepare for Presentation
+
+- This stage involves the handoff of the dimension and fact tables.<sup>pg 463</sup>
+
+- Subsystem 9 - _Slowly Changing Dimension Manager_: the ETL system must determine how to handle an attribute value that has changed from the value already stored in the data warehouse.
+    - Type 1 Overwrite: take the revised data from the CDC and overwrite the dimension table contents. Type 1 is appropriate when correcting data or when there is no business need to keep history of previous values. Invalidates any aggregates built<sup>pg 465</sup>
+    - Type 2 Add New Row: standard technique for accurately tracking changes in dimensions and associating them correctly with fact rows. There should be 5 housekeeping columns: changed date, row effective date/time, row end date/time, reason for change, current/expired flag. Does not invalidate any aggregates.<sup>pg 466</sup>
+    - Type 3 Add New Attribute: "soft" attribute changes that allow a user to refer either to the old value of the attribute or the new value. Push the existing column values into the newly created column and populate the original column with new values. Invalidates any aggregates.<sup>pg 467</sup>
+    - Type 4 Add Mini-Dimension: when a group of attributes in a dimension change sufficiently rapidly, they can be split off into a mini-dimension. Both the primary key of the main dimension and the primary key of the mini-dimension must appear in the fact table.<sup>pg 467</sup>
+    - Type 5 Add Mini-Dimension and Type 1 Outrigger: builds on Type 4 but embeds a type 1 reference to the mini-dimension in the primary dimension. Allows for accessing the current values in the mini-dimension directly from the base dimension without linking through a fact table<sup>pg 468</sup>.
+    - Type 6 Add Type 1 to Type 2 Dimension: has an embedded attribute that is an alternate value of a normal type 2 attribute in the base dimension.<sup>pg 468</sup>
+- Subsystem 10 - _Surrogate Key Generator_: if the DBMS is used to assign surrogate keys, it is preferable for the ETL process to directly call the database sequence generator. The surrogate key generator should independently generate keys for every dimension.<sup>pg 469</sup>
+- Subsystem 11 - _Hierarchy Manager_: multiple hierarchies simply coexist in the same dimension as dimension attributes. Normalised data structures are not recommended for the presentation level but may be appropriate in the ETL staging area to assist with populating/maintaining hierarchies in dimension tables.<sup>pg 470</sup>
+- Subsystem 12 - _Special Dimension Manager_: placeholder in the ETL architecure for supporting organisation-specific dimensional design characteristics.
+    - Date/Time dimensions: typically specified at the beginning of a data warehouse project.<sup>pg 470</sup>
+    - Junk dimensions: creating new junk dimension rows on-the-fly requires assembling the junk dimension attributes and comparing them to the existing junk dimension rows to see if the row already exists. If not, a new dimension row must be assembled and surrogatae key created.<sup>pg 471</sup>
+    - Mini-dimensions: technique used to track dimension attribute changes in a large dimension where the type 2 technique is infeasible, such as a customer dimension.<sup>pg 471</sup> ETL system must maintain a multicolumn surrogate key lookup table to identify base dimension member and appropriate mini-dimension row.<sup>pg 472</sup>
+    - Shrunken subset dimensions: conformed dimensions that are a subset of rows and/or columns of one of your base dimensions, so ETL data flow should build conformed shrunken dimensions from the base dimension rather than independently to assure conformance.<sup>pg 472</sup>
+    - Small static dimensions: created entirely by ETL system, i.e. lookup dimensions where an operational code is translated into words.<sup>pg 472</sup>
+    - User maintained dimensions: dimensions with no formal system of record, i.e. custom descriptions, groupings and hierarchies created by the business for reporting and analysis. Ideally the appropriate busines user department agree to own the maintenance of these attributes and the DW/BI team provides a maintenance user interface.<sup>pg 473</sup>
+- Subsystem 13 - _Fact Table Builders_: the ETL requirements to effectively build the transaction, perioid snapshot and accumulating snapshot fact tables.
+    - Transaction fact table loader: transaction grain represents a measurement event defined at a particular instant. Bulk load new rows into the fact table, with the target fact table partitioned by time.<sup>pg 474</sup>
+    - Periodic snapshot fact table loader: facts should describe only measures appropriate to the timespan defined by the period. Typically loaded en masse at the end of the appropriate period (daily, weekly or monthly).<sup>pg 474</sup>
+    - Accumulating snapshot fact table loader: each time something happens, the snapshot fact row is destructively modified. Date foreign keys are overwritten and various facts are updated.<sup>pg 475</sup>
+- Subsystem 14 - _Surrogate Key Pipeline_: step for replacing operational natural keys in the incoming fact table with the appropriate dimension surrogate keys.<sup>pg 475</sup> A surrogate key lookup needs to occur to substitute the operational natural keys in the fact table recird with the proper current surrogate key. Use the actual dimension table as the source for the most current value of the surrogate key corresponding to each natural key. Look up all the rows in the dimension with the natural key equal to the desired value and select the surrogate key that aligns with the historical context of the fact row using the begin and end effective dates.<sup>pg 476</sup> Late arriving facts need to be processed by finding the surrogate key where the fact transaction date is between the key's effective start and end date.<sup>pg 477</sup>
+- Subsystem 15 - _Multivalued Dimension Bridge Table Builder_: the ETL system has the choice of creating a unique group for each set of observations, or reusing groups when an identical set of observations occurs.<sup>pg 477</sup>
+- Subsystem 16 - _Late Arriving Data Handler_: for late arriving facts, you have to search back in history to decide which dimension keys were in effect when the activity occurred.<sup>pg 478</sup> For late arriving dimensions, support type 2 columns by adding the revised row to the dimension with a new surrogate key and then go and destructively modify any subsequent fact rows' foreign key. In the meantime, assign a new surrogate key with a set of dummy attributes until dimension values are available.<sup>pg 479</sup>
+- Subsystem 17 - _Dimension Manager System_: prepares and publishes conformed dimensions to the data warehouse community. Implements the common descriptive labels; adds new rows to the conformed dimension for the new source data and generate new surrogate keys; add new rows for type 2 changes and generate new surrogate keys; modify rows in place for type 1 and type 3 changes; maintain dimension version numbers (for type 1 or 3); release dimension simultaneously to all fact table providers.<sup>pg 480</sup>
+- Subsystem 18 - _Fact Provider System_: fact table providers are responsible for receiving conformed dimensions from the dimension manager, and creating, maintaining and using one or more fact tables. Add all new rows to fact tables after replacing their natural keys with correct surrogate keys; modify rows in fact tables for errors/accumulating snapshots/late arriving dimensions; remove/recalculate aggregates and quality check; and bring fact and dimension tables online.<sup>pg 481</sup>
+- Subsystem 19 - _Aggregate Builder_: like indexes, specific data structures created to improve performance. Build and use aggregates without causing distraction or consuming extraordinary resources. User feedback on slow-running queries provides input to designing aggregations. Populate and maintain aggregate fact table rows and shrunken dimension tables where needed by aggregate fact tables. Aggregates need to be taken off-line when they are not consistent with the base data.<sup>pg 481</sup>
+- Subsystem 20 - _OLAP Cube Builder_: relational databases are best at providing storage and management, and the foundation of OLAP cubes (if part of architecture).<sup>pg 482</sup>
+- Subsystem 21 - _Data Propagation Manager_: presenting conformed, integrated enterprise data from the data warehouse presentation layer to other environments for special purposes, i.e. sharing with business partners, customers and vendors. Since most third parties cannot directly query the existing data warehouse, data need to be extracted from presentation layer and loaded into proprietary structures required by third party. Data propagation is part of the ETL system.<sup>pg 482</sup>
+
+#### Managing the ETL Environment
+
+- One of the goals for the DW/BI system is to build a reputation for providing timely, consistent, and reliable data to empower the business. It should be operated in a _professional manner_ with approprite SLAs per subsystem. There are three criteria to achieve this goal:<sup>pg 483</sup>
+  - Reliability: ETL processes must consistently run to completion on time.
+  - Availability: data warehouse should be available as promised.
+  - Manageability: a successful data warehouse constantly grows along with the business, and ETL processes need to evolve as well.
+
+- Subsystem 22 - _Job Scheduler_: ETL schedulers should be managed through a single metadata driven job control environment, needs to be aware of and control the relationships and dependencies between ETL jobs, and recognise when a table is ready to be processed.<sup>pg 483</sup> It needs:
+  - Job definition: define a series of steps as a job and specify some relationship among jobs.<sup>pg 484</sup>
+  - Job scheduling: provides time- and event-based scheduling, including ability to monitor database flags, check for the existence of files, and compare creation dates.<sup>pg 484</sup>
+  - Metadata capture: needs to capture information about what step the load is on, what time it started, and how long it took, by having each step write to a log file.<sup>pg 484</sup> 
+  - Logging: collecting information about the entire ETL process and logging to a database (text file at a minimum). Support recovery and restarting of a process.<sup>pg 484</sup>
+  - Notification: ETL processes should run without human intervention, without fail. But when problems do occur, control systems need to interface to the problem notification system.<sup>pg 484</sup>
+- Subsystem 23 - _Backup System_: Backup and recovery processes are often designed as part of the ETL system, including backing up of intermediate staging data necessary to restart failed ETL jobs.
+  - Backup: usually images of the database at a certain point in time, including indexes and physical layout. Need to be high performance (backups that do not impact performance); simple to administer (identify objects to backup, create schedules and logs, and maintain backup verifcation); automated (storage management, automated schedling).<sup>pg 485</sup>
+  - Archive and retrieval: do not throw data away but put it somewhere that costs less but is still accessible. Audit trails for access and alterations to archived data need to be kept.<sup>pg 486</sup> Archives should include copies of the ETL system alongside the data.<sup>pg 495</sup>
+- Subsystem 24 - _Recovery and Restart System_: used for either resuming a job that has halted (ETL system needs reliable checkpoint functionality to restart jobs at exactly the right point) or for backing out the whole job and restarting from the beginning. Fact table surrogate keys can be used to help identify where jobs need to be restarted from/which rows need to be backed out.<sup>pg 487</sup>
+- Subsystem 25 - _Version Control System_: snapshotting capability for archiving and recovering all the _logic and metadata_ of the ETL pipeline. Each subsystem, ETL modules and jobs need to be version controlled.<sup>pg 488</sup> Data may need to be reprocessed using exact versions of an ETL system.<sup>pg 495</sup>
+- Subsystem 26 - _Version Migration System_: ETL jobs designed and developed need to be bundled and migrated to the next environment - from development to test to production. Everything done to the production system should have been designed in development and the deployment script tested on the test environment. Should interface with the version control system to back out a migration. Every operation should go through this process.<sup>pg 488</sup> Effectively "CI/CD".
+- Subsystem 27 - _Workflow Monitor_: the ETL system must be constantly monitored to ensure ETL processes are operating efficiently and the warehouse is being loaded on a consistently timely basis. Monitor job status for all jobs initiated, including number of records processed and summaries of errors.<sup>pg 489</sup>
+- Subsystem 28 - _Sorting System_: sometimes needed for aggregating and joining flat file sources. Sorting can produce aggregates where each break row of a given sort is a row for the aggregate table, and sorting plus counting is often a good way to diagnose data quality issues.<sup>pg 490</sup>
+- Subsystem 29 - _Lineage and Dependency Analysis_:
+  - Lineage: beginning with a specific data element in a BI report, identify the _source_ of that data element, upstream intermediate tables, and all transformations applied. The ETL system must display the physical sources and all subsequent transformations of any selected data element.<sup>pg 490</sup> Show where a final piece of data came from, and fully document all the transformations.<sup>pg 495</sup>
+  - Dependency: beginning with a specific data element in a source table, identify all downstream intermediate tables and final BI reports containing that data element, and all transformations applied to that data element.<sup>pg 490</sup> Important when assessing changes to a source system and the downstream impacts on the data warehouse and ETL system.<sup>pg 491</sup> Show where an original source data element was ever used.<sup>pg 495</sup>
+- Subsystem 30 - _Problem Escalation System_: ETL teams develop the ETL processes and the QA teams test them thoroughly before they are turned over to those responsible for day-day operations. First level support for ETL system should be a group dedicated to monitoring production applications (usually a helpdesk); the ETL development team gets involved only if operational support cannot solve. If a problem does occur, the ETL process should automatically notify the problem escalation system, with each notification event should be written to a database to analyse the types of problems that arise.<sup>pg 491</sup>
+- Subsystem 31 - _Parallelizing/Pipelining System_: enables the ETL system to take advantage of multiple processors to process large amounts of data. Highly desirable that parallelizing and pipelining be automatically invoked for every ETL process. Extraction processes can be parallelized by logically partitioning on ranges of an attribute.<sup>pg 492</sup>
+- Subsystem 32 - _Security System_: adminster role-based security on all data and metadata in the ETL system. Enforce comprehensive authorised access to all ETL data and metadata by individual and role, and strictly controlled access to the production data warehouse, but privileged access to the development environments. Maintain historical records of access logs. Ability to show who has accessed or modified data and transforms.<sup>pg 495</sup> Ensure data moved across networks are encrypted.<sup>pg 493</sup>
+- Subsystem 33 - _Compliance Manager_: tracking exact condition and content of data at any point in time that may have been under the control of the data warehouse; archives of data as it was originally received; who had authorized access.<sup>pg 493</sup>
+- Subsystem 34 - _Metadata Repository Manager_: capture ETL metadata, including the process metadata, technical metadata and business metadata. Make sure somebody on the ETL team is assigned the role of metadata manager.<sup>pg 495</sup>
 
 ### Common Dimensional Modeling Mistakes to Avoid<sup>pg 397</sup>
 
