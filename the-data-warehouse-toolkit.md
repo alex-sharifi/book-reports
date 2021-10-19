@@ -711,7 +711,7 @@
 
 - Structured, semi-structured, un-structured and raw data in many different formats. Conventional RDBMSs and SQL simply cannot store or analyze the wide range of data and use-cases.<sup>pg 528</sup>
 - RDBMSs must allow the new data types to be processed within the DBMS inner loop by means of specially crafted user-defined functions (UDFs).<sup>pg 530</sup>
-![Extended RDBMS Architecture](/images/dwtk-ch21-extendedrdbms.png)
+![Extended RDBMS Architecture](/images/dwtk-ch21-extendedrdbms.jpg)
 - MapReduce is a UDF execution framework, where the "F" can be extraordinarily complex.<sup>pg 530</sup> A flexible, general purpose environment for many forms of ETL processing.<sup>pg 532</sup>
 - Best practises for big data:<sup>pg 531</sup>
   - Choose data sources from business needs.
