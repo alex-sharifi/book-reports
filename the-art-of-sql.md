@@ -55,4 +55,84 @@
 
 ## Chapter 2: Accessing Databases Efficiently
 
-### 
+### Query Identification
+- Adopt the habit of identifying your programs and critical modules whenever possible by inserting comments into your SQL to help identify where in the program a given query is used and track down any erroneous code.
+
+### Stable Database Connections 
+- Database connections and round-trips are like Chinese Walls - the more you have, the longer it takes to recieve the correct message.
+
+### Stable Database Schema
+- The use of data definition language (DDL) to create, alter or drop database objects inside an application is bad practice. There is no reason to dynamically create, alter or drop objects.
+
+### Set Processing in SQL
+- Any attempt to process a large amount of data in small chunks is usually a bad idea and can be inefficient.
+
+### Action-Packed SQL Statements
+- Many relatively complex operations can be accomplished in a single SQL statement. Leave as much as you can to the database optimiser to sort out. PL/SQL is not "closer to the kernel" than an SQL function. The code of user-written functions is beyond the examination of the optimiser.
+
+### Profitable Database Access
+- It is inefficient to retrieve data in several separate visits to the database. Do as much work in one operation. Maximise each visit to the database to complete as much work as can reasonably be achieved for every visit.
+
+### Do Only What Is Required
+- If an action is required to operate on a number of rows, just do it. i.e. there is no need to check the existence of a value if you are going to update anyway. Just do the update.
+
+### Program Logic Into Queries
+- It is preferable to embed as much possible procedural logic as possible within an SQL statement, rather than the host language. Use `CASE` logic in the SQL statement for logic instead of in host application.
+
+### Do Multiple Updates At Once
+- In most cases, one update is a lot faster than several separate ones. Apply updates in one fell swoop and try to minimise repeated visits to the same table, i.e. `UPDATE table SET column1=(query1),colum2=(query2) WHERE...`
+
+## Chapter 3: Indexing
+
+### Identify The Entry Points
+- Indexes are a technique for achieving the fastest possible access to specific data.
+- Indexes come with heavy costs, both in terms of disk space used and processing costs. Maintenance costs for one index may exceed those for one table.
+- Primary key columns are indexed automatically simply by virtue of declaration as a primary key.
+- In a transactional database, too many indexes is often the sign of an uncertain design.
+- When an indexing strategy is used to pull in large quantities of data, the role of the indexes has been misunderstood. Be sure what you are indexing and why you are indexing it.
+
+### Making Indexes Work
+- The applicability of an index has long been judged on the percentage of the total data retrieved by a query that uses a key value as the only search criteria. Conventionally, 10% of rows should be matched by the index query.
+- In a transactional database, it is useless to index columns with a low number of distinct values.
+- _Index-organised tables_ push as much data into the indexes as possible, so data does not need to be retrieved from the table. Some queries can be answered by retrieving only the index data.
+
+### Indexes With Functions And Conversions
+- Indexes are usually implemented as tree structures.
+
+## Chapter 4: Thinking SQL Statements
+
+### The Nature of SQL
+- We can be confident that relational expressions can be written in different ways and yet return the same result.
+- The relational phase consists of correctly identifying the rows that will belong to the result set - not necessarily in order.
+- Relational theory operates on sets, and knows nothing of the ordering of these sets.
+- We start with a relational core that identifies the set of data we are going to operate on, then move to a non-relational layer which works on this now finite set to produce the final result. Once we have left the relational core in the execution (i.e. imposed ordering,) we no longer have a relation, and we can no longer return to the relational core. It is safest to do as much of the job as possible in the relational layer.
+- One should use SQL to express what is required, rather than how that requirement is to be met.
+- Try to maximise the amount of true relational processing.
+
+### Views
+- A view can be considered shorthand for a query, and this is probably one of the most common usages of views.
+
+### Filtering
+- _Correlated subqueries_ have an inner query referring to the current row of the outer query.
+- _Uncorrelated subqueries_ are different and better. Just do these.
+
+## Understanding Physical Implementation
+
+### Structural Types
+- The base units of data that a DBMS handles are known as pages or blocks.
+- We must try to keep the number of data pages that have to be accessed by the database engine as low as possible.
+- Reads and writes do not live in harmony: readers want data clustered; concurrent writers want data scattered.
+
+### Forcing Row Ordering
+- Even though order is alien to relational theory, it helps to find related rows together rather than scattered over a table, i.e. range searching on time series data.
+- Range scanning on clustered data can give impressive performance, but other queries will suffer as a consequence.
+
+### Automatically Grouping Data
+- _Partitions_ on tables and indexes splits a large table into manageable chunks.
+- _Round-robin partitioning_ involves arbitrarily defining a number of partitions, and data assigned to each partition in a round-robin fashion.
+- _Data-driven partitioning_ involves partitioning rows based on values in columns.
+- Partitioned tables give us a single table at a logical level with a true primary key, and several columns that are defined as the _partition key_ - their values are used to determine into which partition a row is inserted.
+- Partitioning approaches are: _hash partitioning_ (fast access to rows for any specific value; but takes no consideration of distribution of data values), _range partitioning_ (gathers values falling within a certain range), _list partitioning_ (explicitly specify that rows containing a list of possible values for the partition key).
+- Partitioning can lead to hot spots (i.e most current data)
+- Can be used to cluster data to achieve faster data retrieval; spread data during concurrent writes to avoid hot spots.
+- The biggest benefits to queries of table partitioning are obtained when data is uniformly spread in respect to the partitioning key.
