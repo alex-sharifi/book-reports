@@ -112,11 +112,11 @@
 ### Views
 - A view can be considered shorthand for a query, and this is probably one of the most common usages of views.
 
-### Filtering
+### Filtering
 - _Correlated subqueries_ have an inner query referring to the current row of the outer query.
 - _Uncorrelated subqueries_ are different and better. Just do these.
 
-## Understanding Physical Implementation
+## Understanding Physical Implementation
 
 ### Structural Types
 - The base units of data that a DBMS handles are known as pages or blocks.
