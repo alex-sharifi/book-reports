@@ -116,7 +116,7 @@
 - _Correlated subqueries_ have an inner query referring to the current row of the outer query.
 - _Uncorrelated subqueries_ are different and better. Just do these.
 
-## Understanding Physical Implementation
+## Chapter 5: Understanding Physical Implementation
 
 ### Structural Types
 - The base units of data that a DBMS handles are known as pages or blocks.
